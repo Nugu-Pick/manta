@@ -1,0 +1,16 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  flyway:
+    enabled: true
+    init-sql: SET search_path TO orca, extensions, public
+    create-schemas: true
+    default-schema: orca
+    schemas: orca
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: orca

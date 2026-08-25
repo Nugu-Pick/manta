@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: manta
+  profiles:
+    default: local
+  jpa:
+    open-in-view: false
+  modulith:
+    detection-strategy: explicitly-annotated
+    events:
+      completion-mode: archive
+
+logging:
+  pattern:
+    level: 'traceId=%X{traceId:-} %5p'
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+scalar:
+  enabled: false
+  path: /scalar
+  url: /openapi3.yaml

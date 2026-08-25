@@ -1,0 +1,34 @@
+spring:
+  config:
+    activate:
+      on-profile: prod
+  output:
+    ansi:
+      enabled: never
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-init-sql: SET search_path TO orca, extensions, public
+  flyway:
+    enabled: true
+    init-sql: SET search_path TO orca, extensions, public
+    create-schemas: true
+    default-schema: orca
+    schemas: orca
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: orca
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER_URI}
+          jwk-set-uri: ${AUTH_JWKS_URI}

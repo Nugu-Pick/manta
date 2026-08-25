@@ -1,0 +1,32 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+  output:
+    ansi:
+      enabled: always
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-init-sql: SET search_path TO orca, extensions, public
+  flyway:
+    enabled: true
+    init-sql: SET search_path TO orca, extensions, public
+    create-schemas: true
+    default-schema: orca
+    schemas: orca
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: orca
+
+logging:
+  pattern:
+    level: '%clr(traceId=%X{traceId:-}){yellow} %clr(%5p){cyan}'
