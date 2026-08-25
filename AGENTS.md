@@ -31,7 +31,7 @@
 - Release 버전은 `vMAJOR.MINOR.PATCH` 형식을 사용한다. `v`는 Git tag 접두사이며, SemVer 숫자는 호환성을 깨는 변경·하위 호환 기능 추가·하위 호환 버그 수정을 각각 의미한다. 기준은 <https://semver.org/>를 따른다.
 - `MAJOR`는 기존 API·동작과 호환되지 않는 변경, `MINOR`는 기존 사용자를 깨지 않는 기능 추가, `PATCH`는 하위 호환 버그 수정에 올린다.
 - PR merge는 Git 브랜치에 변경을 반영하는 작업이며 자동 배포와 동일하지 않다. 자동 배포는 `main` push를 감시하는 CI/CD workflow가 별도로 구성된 경우에만 수행된다.
-- GitHub Actions 테스트 CI는 `dev`를 대상으로 하는 feature/fix PR과 PR merge 후 `dev` push에서만 실행한다. `dev → main` Release PR과 `main` push에서는 테스트 CI를 실행하지 않는다.
+- GitHub Actions 테스트 CI는 `dev` 대상 feature/fix PR, PR merge 후 `dev` push, `dev → main` Release PR에서 실행한다. 각 검증은 `./gradlew clean check`로 단위·통합 테스트와 OpenAPI 생성을 함께 확인하며, `main` push에서는 테스트 CI를 실행하지 않는다.
 - Release PR에는 CI/CD가 수행하는 검증·배포 절차를 중복 체크리스트로 작성하지 않는다. DB migration이 포함된 변경은 해당 migration의 호환성 규칙과 배포 순서를 코드·설계 문서에 기록한다.
 
 ## DTO·Entity·레이어 책임
@@ -55,7 +55,10 @@
 
 - 기준 패키지는 `com.chaean.manta`다. 문서 예시에도 `com.nugupick`을 사용하지 않는다.
 - Spring Modulith 의존성은 `spring-modulith-starter-jpa`를 사용한다. 이벤트 publication 테이블은 JPA 모듈의 공식 매핑을 확인한 뒤 해당 기능 구현 시 migration으로 추가한다.
-- API 문서는 Spring REST Docs 테스트를 source of truth로 사용하고, `restdocs-api-spec` adapter로 OpenAPI를 생성하며, Scalar로 표시한다. Springdoc annotation 기반 문서는 사용하지 않는다.
+- API의 전역 prefix는 `/api/v1`이다. API 문서 화면은 `/scalar`, OpenAPI 파일은 `/openapi3.yaml` 경로를 사용하며 API prefix와 분리한다.
+- API 문서는 Spring REST Docs 테스트를 source of truth로 사용하고, `restdocs-api-spec` adapter로 OpenAPI를 생성하며, Scalar로 표시한다. OpenAPI `servers` 값은 `/api/v1`로 두고 `localhost`를 운영 문서에 넣지 않는다. Springdoc annotation 기반 문서는 사용하지 않는다.
+- OpenAPI 산출물은 `build/api-spec`에 생성하고 Git에 커밋하지 않는다. CI/CD 구현 시 검증된 산출물을 Docker image에 포함해 Scalar가 읽도록 한다.
+- 실행 환경은 local과 production만 사용하며 `dev`는 배포 환경이 아닌 통합 브랜치다. local과 production 모두 Scalar를 사용할 수 있지만 production의 `/scalar`와 `/openapi3.yaml`은 Caddy Basic Auth로 보호한다. 문서 계정과 비밀번호 해시는 Lightsail runtime 환경 파일에 두고 Git과 image에 넣지 않는다.
 - `common.persistence.BaseEntity`, `common.persistence.BaseDeletedEntity`, `common.config.JpaAuditingConfig`, `common.config.JacksonConfig`, `common.serialization.InstantSerializer`, `common.config.QuerydslConfig`는 공통 기반으로 유지한다.
 - `BaseEntity`는 `createdAt`, `updatedAt`만 제공하고, `deleted_at`을 사용하는 Entity만 `BaseDeletedEntity`를 상속한다. `status`로 생명주기를 관리하는 Entity에 `deleted_at`을 강제로 추가하지 않는다.
 - 공통 기반에 `@SQLRestriction`이나 `@SoftDelete`를 적용하지 않는다. `deleted_at`은 Entity별 삭제·탈퇴·관계 해제 시각으로 명시적으로 관리하고, 관리자 운영 상태가 필요한 Entity는 별도의 `status`로 관리한다. 조회 조건은 Repository Query에서 목적에 맞게 명시한다.
@@ -106,6 +109,7 @@
 - API 문서의 기준은 Spring REST Docs 테스트다. 테스트에서 생성한 OpenAPI 문서를 Scalar로 렌더링한다.
 - REST Docs와 OpenAPI 산출물 사이에는 `restdocs-api-spec` 계열 adapter를 사용한다. Scalar는 OpenAPI 문서의 표시 계층이며 API 계약을 별도로 작성하지 않는다.
 - Controller에 문서용 annotation과 설명을 과도하게 넣지 않는다. 요청·응답 필드, 예제, 오류 계약은 Controller 통합 테스트에서 검증하고 문서화한다.
+- `dev` 대상 PR과 `dev → main` Release PR의 Controller 통합 테스트에서 REST Docs snippet과 OpenAPI 파일을 생성한다. 생성된 파일은 검증 후 배포 산출물로만 사용한다.
 - 테스트는 `given`, `when`, `then` 단계가 드러나는 구조로 작성한다.
 - 테스트 메서드에는 `@DisplayName`을 사용하고, 테스트 설명은 한글로 작성한다.
 - 단위 테스트의 범위는 Service, 도메인 규칙, Query 로직으로 한정한다. 외부 HTTP와 실제 DB 연결에 의존하지 않는다.
