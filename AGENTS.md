@@ -40,7 +40,7 @@
 - Release 버전은 `vMAJOR.MINOR.PATCH` 형식을 사용한다. `v`는 Git tag 접두사이며, SemVer 숫자는 호환성을 깨는 변경·하위 호환 기능 추가·하위 호환 버그 수정을 각각 의미한다. 기준은 <https://semver.org/>를 따른다.
 - `MAJOR`는 기존 API·동작과 호환되지 않는 변경, `MINOR`는 기존 사용자를 깨지 않는 기능 추가, `PATCH`는 하위 호환 버그 수정에 올린다.
 - PR merge는 Git 브랜치에 변경을 반영하는 작업이며 자동 배포와 동일하지 않다. 자동 배포는 `main` push를 감시하는 CI/CD workflow가 별도로 구성된 경우에만 수행된다.
-- GitHub Actions 테스트 CI는 `dev` 대상 feature/fix PR, PR merge 후 `dev` push, `dev → main` Release PR에서 실행한다. 각 검증은 `./gradlew clean check`로 단위·통합 테스트와 OpenAPI 생성을 함께 확인하며, `main` push에서는 테스트 CI를 실행하지 않는다.
+- GitHub Actions 테스트 CI는 `pull_request` 이벤트의 `dev` 대상 feature/fix PR과 `dev → main` Release PR, 그리고 `push` 이벤트의 `dev` 반영에서 실행한다. 각 검증은 `./gradlew clean openapi3`로 단위·통합 테스트와 OpenAPI 생성을 함께 확인한다. Release PR이 병합된 뒤 발생하는 `main` push에서는 테스트 CI를 중복 실행하지 않는다.
 - Release PR에는 CI/CD가 수행하는 검증·배포 절차를 중복 체크리스트로 작성하지 않는다. DB migration이 포함된 변경은 해당 migration의 호환성 규칙과 배포 순서를 코드·설계 문서에 기록한다.
 
 ## DTO·Entity·레이어 책임
