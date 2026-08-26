@@ -12,6 +12,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -129,6 +130,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
         String token = "profile-subject";
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+        agreeToCurrentDocuments(token);
 
         // when & then
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
@@ -257,6 +259,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 "$.data.nickname");
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer nickname-requester"))
                 .andExpect(status().isOk());
+        agreeToCurrentDocuments("nickname-requester");
 
         // when & then
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer nickname-requester")
@@ -275,6 +278,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         Long memberId = readMemberId(result);
+        agreeToCurrentDocuments(token);
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -368,5 +372,18 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
     private Long readMemberId(MvcResult result) throws Exception {
         Number memberId = com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), "$.data.id");
         return memberId.longValue();
+    }
+
+    private void agreeToCurrentDocuments(String token) throws Exception {
+        MvcResult currentDocuments = mockMvc.perform(get("/api/v1/legal-documents/current"))
+                .andExpect(status().isOk())
+                .andReturn();
+        java.util.List<Number> documentIds = com.jayway.jsonpath.JsonPath.read(
+                currentDocuments.getResponse().getContentAsString(), "$.data[*].id");
+        String ids = documentIds.stream().map(Number::toString).collect(java.util.stream.Collectors.joining(","));
+        mockMvc.perform(post("/api/v1/me/agreements").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"legalDocumentIds\":[" + ids + "]}"))
+                .andExpect(status().isOk());
     }
 }

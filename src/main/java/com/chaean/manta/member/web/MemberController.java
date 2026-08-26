@@ -1,7 +1,10 @@
 package com.chaean.manta.member.web;
 
+import java.time.Instant;
+
 import com.chaean.manta.common.security.AuthenticatedMember;
 import com.chaean.manta.common.web.response.ApiResponse;
+import com.chaean.manta.member.internal.application.MemberAgreementQueryService;
 import com.chaean.manta.member.internal.application.MemberCommandService;
 import com.chaean.manta.member.internal.application.MemberQueryService;
 import com.chaean.manta.member.internal.application.model.MemberProfile;
@@ -32,6 +35,7 @@ public class MemberController {
 
     private final MemberCommandService memberCommandService;
     private final MemberQueryService memberQueryService;
+    private final MemberAgreementQueryService memberAgreementQueryService;
 
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<MemberMeResponse>> getMyProfile(
@@ -46,6 +50,7 @@ public class MemberController {
             @AuthenticationPrincipal AuthenticatedMember authenticatedMember,
             @Valid @RequestBody MemberProfileUpdateRequest request) {
         long memberId = memberCommandService.ensureProvisioned(authenticatedMember);
+        memberAgreementQueryService.assertRequiredAgreements(memberId, Instant.now());
         memberCommandService.updateProfile(memberId, new MemberProfileUpdate(request.nickname(), request.gender(),
                 request.ageGroup(), request.description(), request.avatarAssetId()));
         MemberProfile profile = memberQueryService.getMyProfile(memberId);
@@ -56,6 +61,7 @@ public class MemberController {
     public ResponseEntity<ApiResponse<Void>> deleteMyAccount(
             @AuthenticationPrincipal AuthenticatedMember authenticatedMember) {
         long memberId = memberCommandService.ensureProvisioned(authenticatedMember);
+        memberAgreementQueryService.assertRequiredAgreements(memberId, Instant.now());
         memberCommandService.deleteMyAccount(memberId);
         return ResponseEntity.ok(ApiResponse.of(null));
     }
