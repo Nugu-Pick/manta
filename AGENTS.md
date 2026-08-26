@@ -32,6 +32,8 @@
 - 모든 구현 작업은 반드시 `Issue 생성 → Issue 번호 확인 → Issue 번호를 포함한 브랜치 생성 → 구현 → 검증 → PR 생성` 순서로 진행한다. Issue 없이 먼저 브랜치를 만들거나, 검증 전에 PR을 생성하지 않는다.
 - 기능·버그 브랜치는 `dev`에서 생성해 `dev`로 병합한다. 운영 반영은 `dev`에서 `main`으로 Release PR을 만든다.
 - 브랜치명은 `feat/123-oauth-login`, `fix/145-jwks-validation`처럼 유형·Issue 번호·짧은 설명을 lowercase kebab-case로 작성한다. 괄호는 사용하지 않고 `/`, `-`처럼 GitHub에서 안전한 구분자만 사용한다.
+- Issue와 Pull Request 제목은 `<type>: <한글 요약>` 형식으로 작성한다. `<type>`은 `feat`, `fix`, `refactor`, `docs`, `test`, `chore` 중 작업 성격에 맞는 lowercase 값을 사용하고 콜론 뒤에는 공백 하나를 둔다.
+- Issue와 Pull Request 제목의 요약은 한글로 작성하되 `Supabase Auth`, `OAuth2`, `JWT`, `member`처럼 고유명사·기술 식별자는 원문을 유지한다. 예시는 `feat: 약관 기능 구현`, `feat: Supabase Auth 기반 OAuth2 로그인 구현`이다.
 - 구현 완료 후 `./gradlew clean check` 등 작업에 맞는 검증을 성공시키고 결과를 확인한 뒤 PR을 생성한다.
 - PR 본문에서 `feat/*`, `fix/* → dev`는 Issue 번호만 참조하고, `dev → main` Release PR에서 필요한 Issue에 `Closes #123`을 사용한다.
 

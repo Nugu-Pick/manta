@@ -1,5 +1,7 @@
 package com.chaean.manta.member.entity;
 
+import java.time.Instant;
+
 import com.chaean.manta.common.persistence.BaseDeletedEntity;
 
 import jakarta.persistence.Column;
@@ -35,6 +37,18 @@ public class Member extends BaseDeletedEntity {
     @Column(length = 320)
     private String email;
 
+    @Column(length = 20)
+    private String gender;
+
+    @Column(name = "age_group", length = 20)
+    private String ageGroup;
+
+    @Column(length = 160)
+    private String bio;
+
+    @Column(name = "avatar_asset_id")
+    private Long avatarAssetId;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private MemberRole role;
@@ -54,5 +68,35 @@ public class Member extends BaseDeletedEntity {
         Member member = new Member(supabaseSubject, email, nickname);
         member.id = id;
         return member;
+    }
+
+    public static Member rehydrate(long id, String supabaseSubject, String email, String nickname,
+            String gender, String ageGroup, String bio, Long avatarAssetId) {
+        Member member = rehydrate(id, supabaseSubject, email, nickname);
+        member.gender = gender;
+        member.ageGroup = ageGroup;
+        member.bio = bio;
+        member.avatarAssetId = avatarAssetId;
+        return member;
+    }
+
+    public void updateProfile(String nickname, String gender, String ageGroup, String bio, Long avatarAssetId) {
+        this.nickname = nickname;
+        this.gender = gender;
+        this.ageGroup = ageGroup;
+        this.bio = bio;
+        this.avatarAssetId = avatarAssetId;
+    }
+
+    public void withdraw(Instant deletedAt) {
+        delete(deletedAt);
+        supabaseSubject = null;
+        email = null;
+        nickname = "탈퇴회원_" + id;
+        gender = null;
+        ageGroup = null;
+        bio = null;
+        avatarAssetId = null;
+        role = MemberRole.USER;
     }
 }

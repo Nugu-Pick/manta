@@ -43,11 +43,18 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
                         + "WHERE n.nspname = 'orca' AND c.contype = 'f'",
                 Integer.class
         );
+        Integer profileColumnCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.columns "
+                        + "WHERE table_schema = 'orca' AND table_name = 'member' "
+                        + "AND column_name IN ('gender', 'age_group', 'bio', 'avatar_asset_id')",
+                Integer.class
+        );
 
         assertThat(orcaSchemaExists).isTrue();
         assertThat(memberTableExists).isTrue();
         assertThat(postgisExists).isTrue();
         assertThat(pgTrgmExists).isTrue();
         assertThat(foreignKeyCount).isZero();
+        assertThat(profileColumnCount).isEqualTo(4);
     }
 }

@@ -1,6 +1,7 @@
 package com.chaean.manta.member.internal.application;
 
 import java.text.Normalizer;
+import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -37,6 +38,26 @@ public class MemberCommandService {
                 .orElseGet(() -> register(authenticatedMember));
     }
 
+    @Transactional
+    public void updateProfile(long memberId, MemberProfileUpdate update) {
+        Member member = findActiveMember(memberId);
+        String nickname = update.nickname() == null ? member.getNickname() : normalizeNickname(update.nickname());
+        if (nickname.isBlank() || nickname.length() > 32) {
+            throw BusinessException.of(ErrorCode.NICKNAME_INVALID);
+        }
+        if (!nickname.equals(member.getNickname()) && memberRepository.existsByNicknameAndDeletedAtIsNull(nickname)) {
+            throw BusinessException.of(ErrorCode.NICKNAME_ALREADY_TAKEN);
+        }
+        member.updateProfile(nickname, updateValue(update.gender(), member.getGender()),
+                updateValue(update.ageGroup(), member.getAgeGroup()), updateValue(update.bio(), member.getBio()),
+                update.avatarAssetId() == null ? member.getAvatarAssetId() : update.avatarAssetId());
+    }
+
+    @Transactional
+    public void withdraw(long memberId, Instant deletedAt) {
+        findActiveMember(memberId).withdraw(deletedAt);
+    }
+
     private long register(AuthenticatedMember authenticatedMember) {
         for (int attempt = 0; attempt < MAX_NICKNAME_ATTEMPTS; attempt++) {
             String nickname = normalize(createNickname());
@@ -58,5 +79,18 @@ public class MemberCommandService {
 
     private String normalize(String nickname) {
         return Normalizer.normalize(nickname, Normalizer.Form.NFKC).trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeNickname(String nickname) {
+        return normalize(nickname);
+    }
+
+    private String updateValue(String value, String currentValue) {
+        return value == null ? currentValue : value.trim().isEmpty() ? null : value.trim();
+    }
+
+    private Member findActiveMember(long memberId) {
+        return memberRepository.findByIdAndDeletedAtIsNull(memberId)
+                .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
     }
 }

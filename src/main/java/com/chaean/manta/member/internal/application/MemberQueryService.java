@@ -27,6 +27,13 @@ public class MemberQueryService implements MemberAuthorization {
         return MemberProfile.from(member);
     }
 
+    @Transactional(readOnly = true)
+    public PublicMemberProfile getPublicProfile(long memberId) {
+        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+                .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
+        return PublicMemberProfile.from(member);
+    }
+
     @Override
     @Transactional(readOnly = true)
     public Optional<MemberRole> findRoleBySubject(String subject) {

@@ -54,4 +54,25 @@ class MemberQueryServiceTest {
         // then
         assertThat(result).contains(MemberRole.USER);
     }
+
+    @Test
+    @DisplayName("공개 회원 조회는 이메일과 역할을 노출하지 않는 조회 모델을 반환한다")
+    void returnsPublicProfile() {
+        // given
+        Member member = Member.rehydrate(42L, "subject-1", "user@example.com", "누구픽_abc12345",
+                "FEMALE", "TWENTIES", "소개", 99L);
+        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+        MemberQueryService service = new MemberQueryService(memberRepository);
+
+        // when
+        PublicMemberProfile result = service.getPublicProfile(42L);
+
+        // then
+        assertThat(result.id()).isEqualTo(42L);
+        assertThat(result.nickname()).isEqualTo("누구픽_abc12345");
+        assertThat(result.gender()).isEqualTo("FEMALE");
+        assertThat(result.ageGroup()).isEqualTo("TWENTIES");
+        assertThat(result.bio()).isEqualTo("소개");
+        assertThat(result.avatarAssetId()).isEqualTo(99L);
+    }
 }
