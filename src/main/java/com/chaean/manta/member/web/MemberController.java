@@ -1,14 +1,12 @@
 package com.chaean.manta.member.web;
 
-import java.time.Instant;
-
 import com.chaean.manta.common.security.AuthenticatedMember;
 import com.chaean.manta.common.web.response.ApiResponse;
-import com.chaean.manta.member.internal.application.MemberProfileUpdate;
 import com.chaean.manta.member.internal.application.MemberCommandService;
-import com.chaean.manta.member.internal.application.MemberProfile;
 import com.chaean.manta.member.internal.application.MemberQueryService;
-import com.chaean.manta.member.internal.application.PublicMemberProfile;
+import com.chaean.manta.member.internal.application.model.MemberProfile;
+import com.chaean.manta.member.internal.application.model.MemberProfileUpdate;
+import com.chaean.manta.member.internal.application.model.PublicMemberProfile;
 import com.chaean.manta.member.web.dto.request.MemberProfileUpdateRequest;
 import com.chaean.manta.member.web.dto.response.MemberMeResponse;
 import com.chaean.manta.member.web.dto.response.MemberPublicResponse;
@@ -49,16 +47,16 @@ public class MemberController {
             @Valid @RequestBody MemberProfileUpdateRequest request) {
         long memberId = memberCommandService.ensureProvisioned(authenticatedMember);
         memberCommandService.updateProfile(memberId, new MemberProfileUpdate(request.nickname(), request.gender(),
-                request.ageGroup(), request.bio(), request.avatarAssetId()));
+                request.ageGroup(), request.description(), request.avatarAssetId()));
         MemberProfile profile = memberQueryService.getMyProfile(memberId);
         return ResponseEntity.ok(ApiResponse.of(MemberMeResponse.from(profile)));
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<ApiResponse<Void>> withdraw(
+    public ResponseEntity<ApiResponse<Void>> deleteMyAccount(
             @AuthenticationPrincipal AuthenticatedMember authenticatedMember) {
         long memberId = memberCommandService.ensureProvisioned(authenticatedMember);
-        memberCommandService.withdraw(memberId, Instant.now());
+        memberCommandService.deleteMyAccount(memberId);
         return ResponseEntity.ok(ApiResponse.of(null));
     }
 

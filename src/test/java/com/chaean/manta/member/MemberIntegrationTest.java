@@ -70,7 +70,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                                                 .optional(),
                                         fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대")
                                                 .optional(),
-                                        fieldWithPath("data.bio").type(JsonFieldType.STRING).description("회원 소개")
+                                        fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명")
                                                 .optional(),
                                         fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)
                                                 .description("프로필 이미지 asset ID").optional(),
@@ -111,7 +111,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                                   "nickname": "  맛집탐험가  ",
                                   "gender": "FEMALE",
                                   "ageGroup": "TWENTIES",
-                                  "bio": "새로운 맛집을 찾습니다.",
+                                  "description": "새로운 맛집을 찾습니다.",
                                   "avatarAssetId": 101
                                 }
                                 """))
@@ -119,7 +119,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(jsonPath("$.data.nickname").value("맛집탐험가"))
                 .andExpect(jsonPath("$.data.gender").value("FEMALE"))
                 .andExpect(jsonPath("$.data.ageGroup").value("TWENTIES"))
-                .andExpect(jsonPath("$.data.bio").value("새로운 맛집을 찾습니다."))
+                .andExpect(jsonPath("$.data.description").value("새로운 맛집을 찾습니다."))
                 .andExpect(jsonPath("$.data.avatarAssetId").value(101))
                 .andDo(MockMvcRestDocumentationWrapper.document(
                         "member/me-update",
@@ -134,7 +134,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                                                 .optional(),
                                         fieldWithPath("ageGroup").type(JsonFieldType.STRING).description("연령대")
                                                 .optional(),
-                                        fieldWithPath("bio").type(JsonFieldType.STRING).description("회원 소개")
+                                        fieldWithPath("description").type(JsonFieldType.STRING).description("회원 설명")
                                                 .optional(),
                                         fieldWithPath("avatarAssetId").type(JsonFieldType.NUMBER)
                                                 .description("프로필 이미지 asset ID").optional()
@@ -147,12 +147,29 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                                                 .description("OAuth provider가 제공한 이메일"),
                                         fieldWithPath("data.gender").type(JsonFieldType.STRING).description("성별"),
                                         fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대"),
-                                        fieldWithPath("data.bio").type(JsonFieldType.STRING).description("회원 소개"),
+                                        fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명"),
                                         fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)
                                                 .description("프로필 이미지 asset ID"),
                                         fieldWithPath("data.role").type(JsonFieldType.STRING).description("회원 역할")
                                 )
                 ));
+    }
+
+    @Test
+    @DisplayName("설명은 기존 160자 제한을 넘어도 수정하고 응답한다")
+    void updatesAndReturnsLongDescription() throws Exception {
+        // given
+        String token = "long-description-subject";
+        String longDescription = "가".repeat(161);
+        mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk());
+
+        // when & then
+        mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"" + longDescription + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.description").value(longDescription));
     }
 
     @Test
@@ -186,7 +203,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                                                 .optional(),
                                         fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대")
                                                 .optional(),
-                                        fieldWithPath("data.bio").type(JsonFieldType.STRING).description("회원 소개")
+                                        fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명")
                                                 .optional(),
                                         fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)
                                                 .description("프로필 이미지 asset ID").optional()
@@ -216,14 +233,25 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
     }
 
     @Test
-    @DisplayName("회원 탈퇴 시 개인정보를 익명화하고 공개 프로필을 닫는다")
-    void withdrawsAndAnonymizesMember() throws Exception {
+    @DisplayName("회원 탈퇴 시 로그인 식별자만 정리하고 공개 프로필을 닫는다")
+    void deletesMemberAndClearsLoginIdentity() throws Exception {
         // given
         String token = "withdraw-subject";
         MvcResult result = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
                 .andReturn();
         Long memberId = readMemberId(result);
+        mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "gender": "FEMALE",
+                                  "ageGroup": "TWENTIES",
+                                  "description": "새로운 맛집을 찾습니다.",
+                                  "avatarAssetId": 101
+                                }
+                                """))
+                .andExpect(status().isOk());
 
         // when
         mockMvc.perform(delete("/api/v1/me").header("Authorization", "Bearer " + token))
@@ -234,14 +262,15 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("M101"));
         Map<String, Object> member = jdbcTemplate.queryForMap(
-                "SELECT supabase_subject, email, gender, age_group, bio, avatar_asset_id, deleted_at "
+                "SELECT supabase_subject, nickname, email, gender, age_group, description, avatar_asset_id, deleted_at "
                         + "FROM orca.member WHERE id = ?", memberId);
         org.assertj.core.api.Assertions.assertThat(member.get("supabase_subject")).isNull();
-        org.assertj.core.api.Assertions.assertThat(member.get("email")).isNull();
-        org.assertj.core.api.Assertions.assertThat(member.get("gender")).isNull();
-        org.assertj.core.api.Assertions.assertThat(member.get("age_group")).isNull();
-        org.assertj.core.api.Assertions.assertThat(member.get("bio")).isNull();
-        org.assertj.core.api.Assertions.assertThat(member.get("avatar_asset_id")).isNull();
+        org.assertj.core.api.Assertions.assertThat(member.get("nickname")).isEqualTo("탈퇴회원_" + memberId);
+        org.assertj.core.api.Assertions.assertThat(member.get("email")).isEqualTo("user@example.com");
+        org.assertj.core.api.Assertions.assertThat(member.get("gender")).isEqualTo("FEMALE");
+        org.assertj.core.api.Assertions.assertThat(member.get("age_group")).isEqualTo("TWENTIES");
+        org.assertj.core.api.Assertions.assertThat(member.get("description")).isEqualTo("새로운 맛집을 찾습니다.");
+        org.assertj.core.api.Assertions.assertThat(((Number) member.get("avatar_asset_id")).longValue()).isEqualTo(101L);
         org.assertj.core.api.Assertions.assertThat(member.get("deleted_at")).isNotNull();
     }
 

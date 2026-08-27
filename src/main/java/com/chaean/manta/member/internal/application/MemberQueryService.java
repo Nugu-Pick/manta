@@ -7,6 +7,8 @@ import com.chaean.manta.common.web.error.ErrorCode;
 import com.chaean.manta.member.api.MemberAuthorization;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberRole;
+import com.chaean.manta.member.internal.application.model.MemberProfile;
+import com.chaean.manta.member.internal.application.model.PublicMemberProfile;
 import com.chaean.manta.member.internal.persistence.MemberRepository;
 
 import lombok.RequiredArgsConstructor;

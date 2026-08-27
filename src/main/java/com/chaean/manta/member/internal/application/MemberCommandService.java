@@ -1,7 +1,6 @@
 package com.chaean.manta.member.internal.application;
 
 import java.text.Normalizer;
-import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
 
@@ -10,6 +9,7 @@ import com.chaean.manta.common.web.error.BusinessException;
 import com.chaean.manta.common.web.error.ErrorCode;
 import com.chaean.manta.member.api.event.MemberRegisteredEvent;
 import com.chaean.manta.member.entity.Member;
+import com.chaean.manta.member.internal.application.model.MemberProfileUpdate;
 import com.chaean.manta.member.internal.persistence.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -41,21 +41,22 @@ public class MemberCommandService {
     @Transactional
     public void updateProfile(long memberId, MemberProfileUpdate update) {
         Member member = findActiveMember(memberId);
-        String nickname = update.nickname() == null ? member.getNickname() : normalizeNickname(update.nickname());
+        String nickname = update.nickname() == null ? member.getNickname() : normalize(update.nickname());
         if (nickname.isBlank() || nickname.length() > 32) {
             throw BusinessException.of(ErrorCode.NICKNAME_INVALID);
         }
         if (!nickname.equals(member.getNickname()) && memberRepository.existsByNicknameAndDeletedAtIsNull(nickname)) {
             throw BusinessException.of(ErrorCode.NICKNAME_ALREADY_TAKEN);
         }
-        member.updateProfile(nickname, updateValue(update.gender(), member.getGender()),
-                updateValue(update.ageGroup(), member.getAgeGroup()), updateValue(update.bio(), member.getBio()),
-                update.avatarAssetId() == null ? member.getAvatarAssetId() : update.avatarAssetId());
+        member.updateProfile(nickname, update.gender(), update.ageGroup(), update.description(), update.avatarAssetId());
     }
 
     @Transactional
-    public void withdraw(long memberId, Instant deletedAt) {
-        findActiveMember(memberId).withdraw(deletedAt);
+    public void deleteMyAccount(long memberId) {
+        Member member = findActiveMember(memberId);
+        member.clearLoginIdentity();
+        memberRepository.flush();
+        memberRepository.delete(member);
     }
 
     private long register(AuthenticatedMember authenticatedMember) {
@@ -79,14 +80,6 @@ public class MemberCommandService {
 
     private String normalize(String nickname) {
         return Normalizer.normalize(nickname, Normalizer.Form.NFKC).trim().toLowerCase(Locale.ROOT);
-    }
-
-    private String normalizeNickname(String nickname) {
-        return normalize(nickname);
-    }
-
-    private String updateValue(String value, String currentValue) {
-        return value == null ? currentValue : value.trim().isEmpty() ? null : value.trim();
     }
 
     private Member findActiveMember(long memberId) {
