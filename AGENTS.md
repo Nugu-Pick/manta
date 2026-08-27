@@ -35,6 +35,8 @@
 - Issue와 Pull Request 제목은 `<type>: <한글 요약>` 형식으로 작성한다. `<type>`은 `feat`, `fix`, `refactor`, `docs`, `test`, `chore` 중 작업 성격에 맞는 lowercase 값을 사용하고 콜론 뒤에는 공백 하나를 둔다.
 - Issue와 Pull Request 제목의 요약은 한글로 작성하되 `Supabase Auth`, `OAuth2`, `JWT`, `member`처럼 고유명사·기술 식별자는 원문을 유지한다. 예시는 `feat: 약관 기능 구현`, `feat: Supabase Auth 기반 OAuth2 로그인 구현`이다.
 - 구현 완료 후 `./gradlew clean check` 등 작업에 맞는 검증을 성공시키고 결과를 확인한 뒤 PR을 생성한다.
+- 구현 변경은 검증 결과와 diff를 먼저 사용자에게 검토받는다. 사용자의 검토 승인 후에만 commit을 수행하며, commit 뒤에 처음으로 사용자 검토를 요청하지 않는다.
+- commit은 독립적으로 검증·되돌릴 수 있는 논리 단위로 나눈다. Entity·migration·API·테스트처럼 하나의 동작을 함께 구성하는 변경은 하나의 commit으로 묶고, 서로 독립적인 기능·리팩터링·문서 변경은 별도 commit으로 나눈다.
 - PR 본문에서 `feat/*`, `fix/* → dev`는 Issue 번호만 참조하고, `dev → main` Release PR에서 필요한 Issue에 `Closes #123`을 사용한다.
 
 ## 버전과 배포
@@ -55,13 +57,14 @@
 - Controller는 입력 validation, 인증 주체 추출, Service 호출, DTO 매핑과 HTTP status만 담당한다.
 - 상태를 변경하는 유스케이스 Service는 `*CommandService`, 조회 전용 유스케이스 Service는 `*QueryService`로 명명한다. `CommandService`는 생성·수정·삭제와 transaction 경계를, `QueryService`는 조회 조합과 read model 변환을 담당하며 서로의 책임을 섞지 않는다.
 - Service는 유스케이스 orchestration과 transaction 경계를 담당한다. 저장 방식, JSON 직렬화, Controller 전용 타입을 소유하지 않는다. Query·Command Service는 `web.dto`를 반환하지 않고 application read model 또는 도메인 결과를 반환하며, Controller가 HTTP DTO로 변환한다.
-- `internal/application`의 `*CommandService`, `*QueryService`, application read model은 같은 application 패키지에 둔다. command/query 기준으로 하위 디렉터리를 나누지 않으며, 기능별 하위 디렉터리가 실제로 필요해질 때만 추가한다.
+- `internal/application`의 `*CommandService`, `*QueryService`는 application 패키지에 두고, Service용 command/read model은 `internal/application/model`에 둔다. command/query 기준으로 하위 디렉터리를 나누지 않으며, 기능별 하위 디렉터리가 실제로 필요해질 때만 추가한다.
 - 모듈 간 동기 호출 계약은 `<module>.api`에 두고, 모듈 간 비동기 이벤트 계약은 `<module>.api.event`에 둔다. 이벤트 record는 `*Event` 접미사를 사용해 동기 API와 구분한다.
 - Repository는 저장·조회·QueryDSL/native query와 persistence projection만 담당한다. 권한 판단·상태 전이·HTTP 응답 조립을 Repository에 넣지 않는다.
 - 공통 `ApiErrorCode`는 HTTP 변환 계약을 제공하고, 공통·기능별 오류 코드는 `common.web.error.ErrorCode`에 정의한다. enum 내부에 `// Common`, `// Member`처럼 기능 범위를 주석으로 구분하며 별도의 `MemberErrorCode` enum을 만들지 않는다.
 - 외부 API 오류 코드는 Manta 전용 `M` 접두사와 세 자리 숫자(`M001`, `M002`)를 사용한다. enum 상수명은 의미를 표현하고 `code()`는 명시적인 외부 코드를 반환한다. 공통 오류는 `M001`부터 `M099`, `member`는 `M100`부터 `M199`, `content`는 `M200`부터 `M299`, `community`는 `M300`부터 `M399` 범위에서 할당한다.
 - DTO·응답 record의 생성자 인자 검증처럼 호출자 입력의 기본 불변식 검증에는 `IllegalArgumentException`을 사용한다. `BusinessException`은 도메인·애플리케이션 규칙 위반처럼 안정적인 API `ApiErrorCode`가 필요한 경우에만 사용한다.
 - 반복되는 생성·변환 규칙은 `of`, `from`, `create` 같은 정적 팩토리를 우선 사용한다. 선택지가 실제로 여러 개 생길 때만 Factory·Strategy·Specification·Adapter를 도입하며, 한 구현만 있는 추상화나 패턴 이름을 위한 패턴은 만들지 않는다.
+- 단일 호출을 단순 전달하거나 이름만 바꾸는 래퍼 메서드는 만들지 않는다. 실제로 다른 규칙을 명시하거나 둘 이상의 호출처에서 공통 규칙을 공유할 때만 메서드를 분리한다.
 - Lombok으로 생성자·getter·builder 등 반복 보일러플레이트를 줄인다. 다만 Entity에는 `@Data`와 무분별한 `@Setter`를 사용하지 않고, 필요한 접근자와 상태 전이 메서드만 공개한다.
 - Lombok annotation processor는 이미 활성화되어 있으므로 동일한 코드를 수동으로 반복하지 않는다. Lombok이 도메인 규칙을 숨기거나 Entity의 상태 변경 경계를 흐리면 명시적인 Java 코드를 우선한다.
 - 설정 클래스는 기본적으로 `@Configuration`을 사용한다. Bean 간 의존성은 `@Bean` 메서드 파라미터로 주입하고, Bean 메서드를 직접 호출해야 하는 설정에만 `proxyBeanMethods = true`를 명시한다.
@@ -77,7 +80,7 @@
 - 실행 환경은 local과 production만 사용하며 `dev`는 배포 환경이 아닌 통합 브랜치다. local과 production 모두 Scalar를 사용할 수 있지만 production의 `/scalar`와 `/openapi3.yaml`은 Caddy Basic Auth로 보호한다. 문서 계정과 비밀번호 해시는 Lightsail runtime 환경 파일에 두고 Git과 image에 넣지 않는다.
 - `common.persistence.BaseEntity`, `common.persistence.BaseDeletedEntity`, `common.config.JpaAuditingConfig`, `common.config.JacksonConfig`, `common.serialization.InstantSerializer`, `common.config.QuerydslConfig`는 공통 기반으로 유지한다.
 - `BaseEntity`는 `createdAt`, `updatedAt`만 제공하고, `deleted_at`을 사용하는 Entity만 `BaseDeletedEntity`를 상속한다. `status`로 생명주기를 관리하는 Entity에 `deleted_at`을 강제로 추가하지 않는다.
-- 공통 기반에 `@SQLRestriction`이나 `@SoftDelete`를 적용하지 않는다. `deleted_at`은 Entity별 삭제·탈퇴·관계 해제 시각으로 명시적으로 관리하고, 관리자 운영 상태가 필요한 Entity는 별도의 `status`로 관리한다. 조회 조건은 Repository Query에서 목적에 맞게 명시한다.
+- 공통 기반에 `@SQLRestriction`이나 `@SoftDelete`를 적용하지 않는다. `BaseDeletedEntity`를 상속한 Entity는 `@SQLDelete`로 `deleted_at`을 기록하고, 관리자 운영 상태가 필요한 Entity는 별도의 `status`로 관리한다. 조회 조건은 Repository Query에서 목적에 맞게 명시한다.
 - 애플리케이션의 날짜·시각 값은 Java `Instant`로 통일한다. `LocalDateTime`, `OffsetDateTime`, `ZonedDateTime`을 Entity·DTO·Service의 시각 타입으로 사용하지 않는다.
 - JPA auditing 시각은 `common.config.JpaAuditingConfig`에서 `Instant`로 제공한다. 업무 기능에 전역 `Clock` Bean을 추가하지 않는다.
 - DB 시간 컬럼은 PostgreSQL `timestamptz`를 사용한다. API JSON은 Java `Instant` 값을 `Asia/Seoul` 오프셋(`+09:00`)이 포함된 ISO-8601 문자열로 전역 직렬화하며, Controller나 DTO에서 개별 시간 변환을 작성하지 않는다.
@@ -86,6 +89,7 @@
 ## 코드 포맷
 
 - Java 코드는 150자 이내에서 한 줄 작성을 우선한다. 150자를 넘을 때만 다음 줄로 나누며, enum 상수·생성자 인자를 세로로 정렬하는 형식은 사용하지 않는다.
+- Java record component에 validation annotation이 있으면 annotation과 필드를 같은 줄에 쓰지 않는다. annotation 다음 줄에 같은 들여쓰기로 field type과 이름을 선언한다.
 - local variable은 명시적 타입을 우선하고 `var`는 사용하지 않는다. 타입이 코드 이해에 중요한 Java 백엔드 코드의 가독성을 유지한다.
 
 ## 데이터베이스와 Flyway
