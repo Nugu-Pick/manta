@@ -14,10 +14,13 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import org.hibernate.annotations.SQLDelete;
+
 import static lombok.AccessLevel.PROTECTED;
 
 @Entity
 @Table(name = "member", schema = "orca")
+@SQLDelete(sql = "UPDATE orca.member SET deleted_at = CURRENT_TIMESTAMP WHERE id = ?")
 @Getter
 @NoArgsConstructor(access = PROTECTED)
 public class Member extends BaseDeletedEntity {
@@ -35,6 +38,18 @@ public class Member extends BaseDeletedEntity {
     @Column(length = 320)
     private String email;
 
+    @Column(length = 20)
+    private String gender;
+
+    @Column(name = "age_group", length = 20)
+    private String ageGroup;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "avatar_asset_id")
+    private Long avatarAssetId;
+
     @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private MemberRole role;
@@ -50,9 +65,27 @@ public class Member extends BaseDeletedEntity {
         return new Member(supabaseSubject, email, nickname);
     }
 
-    public static Member rehydrate(long id, String supabaseSubject, String email, String nickname) {
-        Member member = new Member(supabaseSubject, email, nickname);
-        member.id = id;
-        return member;
+    public void updateProfile(String nickname, String gender, String ageGroup, String description, Long avatarAssetId) {
+        if (nickname != null) {
+            this.nickname = nickname;
+        }
+        if (gender != null) {
+            this.gender = gender;
+        }
+        if (ageGroup != null) {
+            this.ageGroup = ageGroup;
+        }
+        if (description != null) {
+            this.description = description;
+        }
+        if (avatarAssetId != null) {
+            this.avatarAssetId = avatarAssetId;
+        }
     }
+
+    public void clearLoginIdentity() {
+        supabaseSubject = null;
+        nickname = "탈퇴회원_" + id;
+    }
+
 }

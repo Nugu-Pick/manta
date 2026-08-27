@@ -6,7 +6,7 @@ CREATE TABLE orca.member
     email               VARCHAR(320),
     gender              VARCHAR(20),
     age_group           VARCHAR(20),
-    bio                 VARCHAR(160),
+    description         TEXT,
     role                VARCHAR(20) NOT NULL DEFAULT 'USER',
     avatar_asset_id     BIGINT,
     deleted_at          TIMESTAMP WITH TIME ZONE,

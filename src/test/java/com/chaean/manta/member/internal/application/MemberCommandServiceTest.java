@@ -14,6 +14,8 @@ import com.chaean.manta.common.web.error.BusinessException;
 import com.chaean.manta.common.web.error.ErrorCode;
 import com.chaean.manta.member.api.event.MemberRegisteredEvent;
 import com.chaean.manta.member.entity.Member;
+import com.chaean.manta.member.fixture.MemberFixture;
+import com.chaean.manta.member.internal.application.model.MemberProfileUpdate;
 import com.chaean.manta.member.internal.persistence.MemberRepository;
 
 import org.junit.jupiter.api.DisplayName;
@@ -43,7 +45,7 @@ class MemberCommandServiceTest {
     @DisplayName("같은 Supabase subject가 이미 있으면 기존 회원을 재사용한다")
     void reusesExistingMemberForSameSubject() {
         // given
-        Member member = Member.rehydrate(42L, "subject-1", "user@example.com", "누구픽_abc12345");
+        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
         when(memberRepository.findBySupabaseSubjectAndDeletedAtIsNull("subject-1")).thenReturn(Optional.of(member));
         MemberCommandService service = new MemberCommandService(memberRepository, eventPublisher);
 
@@ -63,7 +65,7 @@ class MemberCommandServiceTest {
         when(memberRepository.findBySupabaseSubjectAndDeletedAtIsNull("subject-2")).thenReturn(Optional.empty());
         when(memberRepository.existsByNicknameAndDeletedAtIsNull(any())).thenReturn(false);
         when(memberRepository.save(any(Member.class))).thenReturn(
-                Member.rehydrate(43L, "subject-2", "user@example.com", "누구픽_abc12345"));
+                MemberFixture.create(43L, "subject-2", "user@example.com", "누구픽_abc12345"));
         MemberCommandService service = new MemberCommandService(memberRepository, eventPublisher);
 
         // when
@@ -90,4 +92,57 @@ class MemberCommandServiceTest {
                 .isInstanceOfSatisfying(BusinessException.class,
                         exception -> assertThat(exception.errorCode()).isSameAs(ErrorCode.EMAIL_REQUIRED));
     }
+
+    @Test
+    @DisplayName("회원 프로필을 수정하고 닉네임을 정규화한다")
+    void updatesProfileWithNormalizedNickname() {
+        // given
+        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "기존닉네임");
+        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+        when(memberRepository.existsByNicknameAndDeletedAtIsNull("새 닉네임")).thenReturn(false);
+        MemberCommandService service = new MemberCommandService(memberRepository, eventPublisher);
+
+        // when
+        service.updateProfile(42L, new MemberProfileUpdate("  새 닉네임  ", "FEMALE", "TWENTIES",
+                "소개입니다.", 99L));
+
+        // then
+        assertThat(member.getNickname()).isEqualTo("새 닉네임");
+        assertThat(member.getGender()).isEqualTo("FEMALE");
+        assertThat(member.getAgeGroup()).isEqualTo("TWENTIES");
+        assertThat(member.getDescription()).isEqualTo("소개입니다.");
+        assertThat(member.getAvatarAssetId()).isEqualTo(99L);
+    }
+
+    @Test
+    @DisplayName("사용 중인 닉네임으로 변경하면 충돌 오류를 반환한다")
+    void rejectsDuplicateNickname() {
+        // given
+        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "기존닉네임");
+        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+        when(memberRepository.existsByNicknameAndDeletedAtIsNull("다른회원")).thenReturn(true);
+        MemberCommandService service = new MemberCommandService(memberRepository, eventPublisher);
+
+        // when & then
+        assertThatThrownBy(() -> service.updateProfile(42L,
+                new MemberProfileUpdate("다른회원", null, null, null, null)))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        exception -> assertThat(exception.errorCode()).isSameAs(ErrorCode.NICKNAME_ALREADY_TAKEN));
+    }
+
+    @Test
+    @DisplayName("공백만 있는 닉네임은 변경할 수 없다")
+    void rejectsBlankNickname() {
+        // given
+        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "기존닉네임");
+        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+        MemberCommandService service = new MemberCommandService(memberRepository, eventPublisher);
+
+        // when & then
+        assertThatThrownBy(() -> service.updateProfile(42L,
+                new MemberProfileUpdate("   ", null, null, null, null)))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        exception -> assertThat(exception.errorCode()).isSameAs(ErrorCode.NICKNAME_INVALID));
+    }
+
 }

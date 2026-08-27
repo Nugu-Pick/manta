@@ -7,7 +7,9 @@ import java.util.Optional;
 
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberRole;
-import com.chaean.manta.member.internal.application.MemberProfile;
+import com.chaean.manta.member.fixture.MemberFixture;
+import com.chaean.manta.member.internal.application.model.MemberProfile;
+import com.chaean.manta.member.internal.application.model.PublicMemberProfile;
 import com.chaean.manta.member.internal.persistence.MemberRepository;
 
 import org.junit.jupiter.api.DisplayName;
@@ -26,7 +28,7 @@ class MemberQueryServiceTest {
     @DisplayName("회원 조회 Service는 HTTP 응답 DTO가 아닌 애플리케이션 조회 모델을 반환한다")
     void returnsApplicationReadModel() {
         // given
-        Member member = Member.rehydrate(42L, "subject-1", "user@example.com", "누구픽_abc12345");
+        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
         when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
         MemberQueryService service = new MemberQueryService(memberRepository);
 
@@ -43,7 +45,7 @@ class MemberQueryServiceTest {
     @DisplayName("회원 subject로 회원 역할을 조회한다")
     void findsRoleBySubject() {
         // given
-        Member member = Member.rehydrate(42L, "subject-1", "user@example.com", "누구픽_abc12345");
+        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
         when(memberRepository.findBySupabaseSubjectAndDeletedAtIsNull("subject-1"))
                 .thenReturn(Optional.of(member));
         MemberQueryService service = new MemberQueryService(memberRepository);
@@ -53,5 +55,26 @@ class MemberQueryServiceTest {
 
         // then
         assertThat(result).contains(MemberRole.USER);
+    }
+
+    @Test
+    @DisplayName("공개 회원 조회는 이메일과 역할을 노출하지 않는 조회 모델을 반환한다")
+    void returnsPublicProfile() {
+        // given
+        Member member = MemberFixture.createWithProfile(42L, "subject-1", "user@example.com", "누구픽_abc12345",
+                "FEMALE", "TWENTIES", "소개", 99L);
+        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+        MemberQueryService service = new MemberQueryService(memberRepository);
+
+        // when
+        PublicMemberProfile result = service.getPublicProfile(42L);
+
+        // then
+        assertThat(result.id()).isEqualTo(42L);
+        assertThat(result.nickname()).isEqualTo("누구픽_abc12345");
+        assertThat(result.gender()).isEqualTo("FEMALE");
+        assertThat(result.ageGroup()).isEqualTo("TWENTIES");
+        assertThat(result.description()).isEqualTo("소개");
+        assertThat(result.avatarAssetId()).isEqualTo(99L);
     }
 }

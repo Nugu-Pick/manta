@@ -7,6 +7,8 @@ import com.chaean.manta.common.web.error.ErrorCode;
 import com.chaean.manta.member.api.MemberAuthorization;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberRole;
+import com.chaean.manta.member.internal.application.model.MemberProfile;
+import com.chaean.manta.member.internal.application.model.PublicMemberProfile;
 import com.chaean.manta.member.internal.persistence.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,13 @@ public class MemberQueryService implements MemberAuthorization {
         Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
                 .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
         return MemberProfile.from(member);
+    }
+
+    @Transactional(readOnly = true)
+    public PublicMemberProfile getPublicProfile(long memberId) {
+        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+                .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
+        return PublicMemberProfile.from(member);
     }
 
     @Override

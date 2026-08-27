@@ -16,7 +16,9 @@ public enum ErrorCode implements ApiErrorCode {
     EMAIL_REQUIRED("M100", "Email required", "이메일이 필요합니다.", HttpStatus.UNAUTHORIZED),
     MEMBER_NOT_FOUND("M101", "Member not found", "회원을 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
     NICKNAME_GENERATION_FAILED("M102", "Nickname generation failed", "닉네임을 생성할 수 없습니다.",
-            HttpStatus.CONFLICT);
+            HttpStatus.CONFLICT),
+    NICKNAME_INVALID("M103", "Invalid nickname", "닉네임이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
+    NICKNAME_ALREADY_TAKEN("M104", "Nickname already taken", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT);
 
     private final String code;
     private final String title;
