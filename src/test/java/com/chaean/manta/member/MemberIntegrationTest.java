@@ -23,8 +23,10 @@ import java.util.Map;
 
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.chaean.manta.member.fixture.LegalDocumentFixture;
 import com.chaean.manta.support.PostgresIntegrationTest;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,11 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUpLegalDocuments() {
+        LegalDocumentFixture.createCurrentDocuments(jdbcTemplate);
+    }
 
     @Test
     @DisplayName("Scalar 문서와 favicon 정적 리소스를 제공한다")
@@ -197,6 +204,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
         String longDescription = "가".repeat(161);
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+        agreeToCurrentDocuments(token);
 
         // when & then
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)

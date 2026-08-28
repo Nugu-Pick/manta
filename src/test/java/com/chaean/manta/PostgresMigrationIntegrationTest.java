@@ -52,6 +52,12 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
                         + "WHERE n.nspname = 'orca' AND t.relname = 'member_agreement' AND c.contype = 'f'",
                 Integer.class
         );
+        Integer legalDocumentVersionColumnCount = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.columns "
+                        + "WHERE table_schema = 'orca' AND table_name = 'legal_document' "
+                        + "AND column_name IN ('version', 'published_at')",
+                Integer.class
+        );
         Integer legalDocumentCount = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM orca.legal_document",
                 Integer.class
@@ -75,8 +81,9 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
         assertThat(pgTrgmExists).isTrue();
         assertThat(legalDocumentTableExists).isTrue();
         assertThat(memberAgreementTableExists).isTrue();
-        assertThat(agreementForeignKeyCount).isEqualTo(2);
-        assertThat(legalDocumentCount).isEqualTo(2);
+        assertThat(agreementForeignKeyCount).isZero();
+        assertThat(legalDocumentVersionColumnCount).isZero();
+        assertThat(legalDocumentCount).isZero();
         assertThat(profileColumnCount).isEqualTo(4);
         assertThat(descriptionColumnType).isEqualTo("text");
     }

@@ -1,7 +1,5 @@
 package com.chaean.manta.member.entity;
 
-import java.time.Instant;
-
 import com.chaean.manta.common.persistence.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -37,16 +35,12 @@ public class MemberAgreement extends BaseEntity {
     @JoinColumn(name = "legal_document_id", nullable = false)
     private LegalDocument legalDocument;
 
-    @Column(name = "agreed_at", nullable = false)
-    private Instant agreedAt;
-
-    private MemberAgreement(Member member, LegalDocument legalDocument, Instant agreedAt) {
+    private MemberAgreement(Member member, LegalDocument legalDocument) {
         this.member = member;
         this.legalDocument = legalDocument;
-        this.agreedAt = agreedAt;
     }
 
-    public static MemberAgreement agree(Member member, LegalDocument legalDocument, Instant agreedAt) {
-        return new MemberAgreement(member, legalDocument, agreedAt);
+    public static MemberAgreement create(Member member, LegalDocument legalDocument) {
+        return new MemberAgreement(member, legalDocument);
     }
 }

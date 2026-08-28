@@ -1,6 +1,5 @@
 package com.chaean.manta.member.internal.application;
 
-import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,8 +23,8 @@ public class MemberAgreementQueryService {
     private final MemberAgreementRepository memberAgreementRepository;
 
     @Transactional(readOnly = true)
-    public void assertRequiredAgreements(long memberId, Instant now) {
-        List<LegalDocument> requiredDocuments = legalDocumentQueryService.findCurrentDocuments(now).stream()
+    public void assertRequiredAgreements(long memberId) {
+        List<LegalDocument> requiredDocuments = legalDocumentQueryService.findCurrentDocuments().stream()
                 .filter(LegalDocument::isRequired)
                 .toList();
         Set<Long> requiredDocumentIds = requiredDocuments.stream().map(LegalDocument::getId).collect(Collectors.toSet());

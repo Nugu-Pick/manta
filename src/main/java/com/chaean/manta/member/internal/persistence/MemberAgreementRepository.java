@@ -1,6 +1,5 @@
 package com.chaean.manta.member.internal.persistence;
 
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 
@@ -16,12 +15,11 @@ public interface MemberAgreementRepository extends JpaRepository<MemberAgreement
     @Modifying
     @Query(value = """
             INSERT INTO orca.member_agreement
-                (member_id, legal_document_id, agreed_at, created_at, updated_at)
-            VALUES (:memberId, :legalDocumentId, :agreedAt, :agreedAt, :agreedAt)
+                (member_id, legal_document_id, created_at, updated_at)
+            VALUES (:memberId, :legalDocumentId, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
             ON CONFLICT (member_id, legal_document_id) DO NOTHING
     """, nativeQuery = true)
-    int insertIfAbsent(@Param("memberId") Long memberId, @Param("legalDocumentId") Long legalDocumentId,
-            @Param("agreedAt") Instant agreedAt);
+    int createIfAbsent(@Param("memberId") Long memberId, @Param("legalDocumentId") Long legalDocumentId);
 
     List<MemberAgreement> findByMember_IdAndLegalDocument_IdIn(Long memberId, Collection<Long> legalDocumentIds);
 }

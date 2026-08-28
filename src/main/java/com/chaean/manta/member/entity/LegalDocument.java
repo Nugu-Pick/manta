@@ -1,7 +1,5 @@
 package com.chaean.manta.member.entity;
 
-import java.time.Instant;
-
 import com.chaean.manta.common.persistence.BaseEntity;
 
 import jakarta.persistence.Column;
@@ -32,9 +30,6 @@ public class LegalDocument extends BaseEntity {
     @Column(name = "document_type", nullable = false, length = 50)
     private LegalDocumentType documentType;
 
-    @Column(nullable = false)
-    private int version;
-
     @Column(nullable = false, columnDefinition = "text")
     private String title;
 
@@ -43,7 +38,4 @@ public class LegalDocument extends BaseEntity {
 
     @Column(name = "is_required", nullable = false)
     private boolean required;
-
-    @Column(name = "published_at")
-    private Instant publishedAt;
 }

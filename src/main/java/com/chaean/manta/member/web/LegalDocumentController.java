@@ -1,11 +1,10 @@
 package com.chaean.manta.member.web;
 
-import java.time.Instant;
 import java.util.List;
 
 import com.chaean.manta.common.web.response.ApiResponse;
-import com.chaean.manta.member.internal.application.LegalDocumentProfile;
 import com.chaean.manta.member.internal.application.LegalDocumentQueryService;
+import com.chaean.manta.member.internal.application.model.LegalDocumentProfile;
 import com.chaean.manta.member.web.dto.response.LegalDocumentResponse;
 
 import lombok.RequiredArgsConstructor;
@@ -24,8 +23,10 @@ public class LegalDocumentController {
 
     @GetMapping("/current")
     public ResponseEntity<ApiResponse<List<LegalDocumentResponse>>> getCurrentDocuments() {
-        List<LegalDocumentProfile> documents = legalDocumentQueryService.getCurrentDocuments(Instant.now());
-        List<LegalDocumentResponse> response = documents.stream().map(LegalDocumentResponse::from).toList();
+        List<LegalDocumentProfile> documents = legalDocumentQueryService.getCurrentDocuments();
+        List<LegalDocumentResponse> response = documents.stream()
+                .map(LegalDocumentResponse::from)
+                .toList();
         return ResponseEntity.ok(ApiResponse.of(response));
     }
 }
