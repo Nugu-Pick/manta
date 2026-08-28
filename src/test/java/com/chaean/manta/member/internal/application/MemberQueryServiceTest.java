@@ -21,60 +21,60 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class MemberQueryServiceTest {
 
-    @Mock
-    private MemberRepository memberRepository;
+	@Mock
+	private MemberRepository memberRepository;
 
-    @Test
-    @DisplayName("회원 조회 Service는 HTTP 응답 DTO가 아닌 애플리케이션 조회 모델을 반환한다")
-    void returnsApplicationReadModel() {
-        // given
-        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
-        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
-        MemberQueryService service = new MemberQueryService(memberRepository);
+	@Test
+	@DisplayName("회원 조회 Service는 HTTP 응답 DTO가 아닌 애플리케이션 조회 모델을 반환한다")
+	void returnsApplicationReadModel() {
+		// given
+		Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
+		when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+		MemberQueryService service = new MemberQueryService(memberRepository);
 
-        // when
-        MemberProfile result = service.getMyProfile(42L);
+		// when
+		MemberProfile result = service.getMyProfile(42L);
 
-        // then
-        assertThat(result.id()).isEqualTo(42L);
-        assertThat(result.email()).isEqualTo("user@example.com");
-        assertThat(result.nickname()).isEqualTo("누구픽_abc12345");
-    }
+		// then
+		assertThat(result.id()).isEqualTo(42L);
+		assertThat(result.email()).isEqualTo("user@example.com");
+		assertThat(result.nickname()).isEqualTo("누구픽_abc12345");
+	}
 
-    @Test
-    @DisplayName("회원 subject로 회원 역할을 조회한다")
-    void findsRoleBySubject() {
-        // given
-        Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
-        when(memberRepository.findBySupabaseSubjectAndDeletedAtIsNull("subject-1"))
-                .thenReturn(Optional.of(member));
-        MemberQueryService service = new MemberQueryService(memberRepository);
+	@Test
+	@DisplayName("회원 subject로 회원 역할을 조회한다")
+	void findsRoleBySubject() {
+		// given
+		Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
+		when(memberRepository.findBySupabaseSubjectAndDeletedAtIsNull("subject-1"))
+			.thenReturn(Optional.of(member));
+		MemberQueryService service = new MemberQueryService(memberRepository);
 
-        // when
-        Optional<MemberRole> result = service.findRoleBySubject("subject-1");
+		// when
+		Optional<MemberRole> result = service.findRoleBySubject("subject-1");
 
-        // then
-        assertThat(result).contains(MemberRole.USER);
-    }
+		// then
+		assertThat(result).contains(MemberRole.USER);
+	}
 
-    @Test
-    @DisplayName("공개 회원 조회는 이메일과 역할을 노출하지 않는 조회 모델을 반환한다")
-    void returnsPublicProfile() {
-        // given
-        Member member = MemberFixture.createWithProfile(42L, "subject-1", "user@example.com", "누구픽_abc12345",
-                "FEMALE", "TWENTIES", "소개", 99L);
-        when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
-        MemberQueryService service = new MemberQueryService(memberRepository);
+	@Test
+	@DisplayName("공개 회원 조회는 이메일과 역할을 노출하지 않는 조회 모델을 반환한다")
+	void returnsPublicProfile() {
+		// given
+		Member member = MemberFixture.createWithProfile(42L, "subject-1", "user@example.com", "누구픽_abc12345",
+			"FEMALE", "TWENTIES", "소개", 99L);
+		when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
+		MemberQueryService service = new MemberQueryService(memberRepository);
 
-        // when
-        PublicMemberProfile result = service.getPublicProfile(42L);
+		// when
+		PublicMemberProfile result = service.getPublicProfile(42L);
 
-        // then
-        assertThat(result.id()).isEqualTo(42L);
-        assertThat(result.nickname()).isEqualTo("누구픽_abc12345");
-        assertThat(result.gender()).isEqualTo("FEMALE");
-        assertThat(result.ageGroup()).isEqualTo("TWENTIES");
-        assertThat(result.description()).isEqualTo("소개");
-        assertThat(result.avatarAssetId()).isEqualTo(99L);
-    }
+		// then
+		assertThat(result.id()).isEqualTo(42L);
+		assertThat(result.nickname()).isEqualTo("누구픽_abc12345");
+		assertThat(result.gender()).isEqualTo("FEMALE");
+		assertThat(result.ageGroup()).isEqualTo("TWENTIES");
+		assertThat(result.description()).isEqualTo("소개");
+		assertThat(result.avatarAssetId()).isEqualTo(99L);
+	}
 }

@@ -3,10 +3,10 @@ package com.chaean.manta.member.internal.application.model;
 import com.chaean.manta.member.entity.Member;
 
 public record PublicMemberProfile(long id, String nickname, String gender, String ageGroup, String description,
-        Long avatarAssetId) {
+                                  Long avatarAssetId) {
 
-    public static PublicMemberProfile from(Member member) {
-        return new PublicMemberProfile(member.getId(), member.getNickname(), member.getGender(),
-                member.getAgeGroup(), member.getDescription(), member.getAvatarAssetId());
-    }
+	public static PublicMemberProfile from(Member member) {
+		return new PublicMemberProfile(member.getId(), member.getNickname(), member.getGender(),
+			member.getAgeGroup(), member.getDescription(), member.getAvatarAssetId());
+	}
 }

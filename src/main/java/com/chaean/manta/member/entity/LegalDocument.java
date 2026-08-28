@@ -22,20 +22,20 @@ import static lombok.AccessLevel.PROTECTED;
 @NoArgsConstructor(access = PROTECTED)
 public class LegalDocument extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "document_type", nullable = false, length = 50)
-    private LegalDocumentType documentType;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "document_type", nullable = false, length = 50)
+	private LegalDocumentType documentType;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String title;
+	@Column(nullable = false, columnDefinition = "text")
+	private String title;
 
-    @Column(nullable = false, columnDefinition = "text")
-    private String content;
+	@Column(nullable = false, columnDefinition = "text")
+	private String content;
 
-    @Column(name = "is_required", nullable = false)
-    private boolean required;
+	@Column(name = "is_required", nullable = false)
+	private boolean required;
 }

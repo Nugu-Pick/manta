@@ -19,14 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class LegalDocumentController {
 
-    private final LegalDocumentQueryService legalDocumentQueryService;
+	private final LegalDocumentQueryService legalDocumentQueryService;
 
-    @GetMapping("/current")
-    public ResponseEntity<ApiResponse<List<LegalDocumentResponse>>> getCurrentDocuments() {
-        List<LegalDocumentProfile> documents = legalDocumentQueryService.getCurrentDocuments();
-        List<LegalDocumentResponse> response = documents.stream()
-                .map(LegalDocumentResponse::from)
-                .toList();
-        return ResponseEntity.ok(ApiResponse.of(response));
-    }
+	@GetMapping("/current")
+	public ResponseEntity<ApiResponse<List<LegalDocumentResponse>>> getCurrentDocuments() {
+		List<LegalDocumentProfile> documents = legalDocumentQueryService.getCurrentDocuments();
+		List<LegalDocumentResponse> response = documents.stream()
+			.map(LegalDocumentResponse::from)
+			.toList();
+		return ResponseEntity.ok(ApiResponse.of(response));
+	}
 }

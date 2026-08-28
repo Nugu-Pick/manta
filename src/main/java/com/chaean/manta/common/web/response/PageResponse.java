@@ -8,23 +8,23 @@ import java.util.Objects;
  */
 public record PageResponse<T>(List<T> items, int page, int size, long totalElements, int totalPages) {
 
-    public PageResponse {
-        items = List.copyOf(Objects.requireNonNull(items, "items must not be null"));
-        if (page < 0) {
-            throw new IllegalArgumentException("page must be greater than or equal to zero");
-        }
-        if (size <= 0) {
-            throw new IllegalArgumentException("size must be greater than zero");
-        }
-        if (totalElements < 0) {
-            throw new IllegalArgumentException("totalElements must be greater than or equal to zero");
-        }
-        if (totalPages < 0) {
-            throw new IllegalArgumentException("totalPages must be greater than or equal to zero");
-        }
-    }
+	public PageResponse {
+		items = List.copyOf(Objects.requireNonNull(items, "items must not be null"));
+		if (page < 0) {
+			throw new IllegalArgumentException("page must be greater than or equal to zero");
+		}
+		if (size <= 0) {
+			throw new IllegalArgumentException("size must be greater than zero");
+		}
+		if (totalElements < 0) {
+			throw new IllegalArgumentException("totalElements must be greater than or equal to zero");
+		}
+		if (totalPages < 0) {
+			throw new IllegalArgumentException("totalPages must be greater than or equal to zero");
+		}
+	}
 
-    public static <T> PageResponse<T> of(List<T> items, int page, int size, long totalElements, int totalPages) {
-        return new PageResponse<>(items, page, size, totalElements, totalPages);
-    }
+	public static <T> PageResponse<T> of(List<T> items, int page, int size, long totalElements, int totalPages) {
+		return new PageResponse<>(items, page, size, totalElements, totalPages);
+	}
 }

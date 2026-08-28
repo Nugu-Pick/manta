@@ -8,9 +8,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
 
-    Optional<Member> findBySupabaseSubjectAndDeletedAtIsNull(String supabaseSubject);
+	Optional<Member> findBySupabaseSubjectAndDeletedAtIsNull(String supabaseSubject);
 
-    boolean existsByNicknameAndDeletedAtIsNull(String nickname);
+	boolean existsByNicknameAndDeletedAtIsNull(String nickname);
 
-    Optional<Member> findByIdAndDeletedAtIsNull(Long id);
+	Optional<Member> findByIdAndDeletedAtIsNull(Long id);
 }

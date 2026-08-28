@@ -8,11 +8,11 @@ import java.util.Objects;
  */
 public record SliceResponse<T>(List<T> items, String nextCursor, boolean hasNext) {
 
-    public SliceResponse {
-        items = List.copyOf(Objects.requireNonNull(items, "items must not be null"));
-    }
+	public SliceResponse {
+		items = List.copyOf(Objects.requireNonNull(items, "items must not be null"));
+	}
 
-    public static <T> SliceResponse<T> of(List<T> items, String nextCursor, boolean hasNext) {
-        return new SliceResponse<>(items, nextCursor, hasNext);
-    }
+	public static <T> SliceResponse<T> of(List<T> items, String nextCursor, boolean hasNext) {
+		return new SliceResponse<>(items, nextCursor, hasNext);
+	}
 }

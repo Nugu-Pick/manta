@@ -12,8 +12,8 @@ import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 @EnableJpaAuditing(dateTimeProviderRef = "auditingDateTimeProvider")
 public class JpaAuditingConfig {
 
-    @Bean
-    public DateTimeProvider auditingDateTimeProvider() {
-        return () -> Optional.of(Instant.now());
-    }
+	@Bean
+	public DateTimeProvider auditingDateTimeProvider() {
+		return () -> Optional.of(Instant.now());
+	}
 }

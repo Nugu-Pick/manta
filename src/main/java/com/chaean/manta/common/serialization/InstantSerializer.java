@@ -11,16 +11,16 @@ import tools.jackson.databind.ser.std.StdSerializer;
 
 public final class InstantSerializer extends StdSerializer<Instant> {
 
-    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME
-            .withZone(ZoneId.of("Asia/Seoul"));
+	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME
+		.withZone(ZoneId.of("Asia/Seoul"));
 
-    public InstantSerializer() {
-        super(Instant.class);
-    }
+	public InstantSerializer() {
+		super(Instant.class);
+	}
 
-    @Override
-    public void serialize(Instant value, JsonGenerator generator, SerializationContext context)
-            throws JacksonException {
-        generator.writeString(FORMATTER.format(value));
-    }
+	@Override
+	public void serialize(Instant value, JsonGenerator generator, SerializationContext context)
+		throws JacksonException {
+		generator.writeString(FORMATTER.format(value));
+	}
 }

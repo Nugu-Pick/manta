@@ -7,15 +7,16 @@ import org.springframework.http.HttpStatus;
 
 public interface ApiErrorCode {
 
-    String code();
+	String code();
 
-    String title();
+	String title();
 
-    String defaultDetail();
+	String defaultDetail();
 
-    HttpStatus status();
+	HttpStatus status();
 
-    default URI type() {
-        return URI.create("https://api.nugupick.example/problems/" + code().toLowerCase(Locale.ROOT).replace('_', '-'));
-    }
+	default URI type() {
+		return URI.create(
+			"https://api.nugupick.example/problems/" + code().toLowerCase(Locale.ROOT).replace('_', '-'));
+	}
 }

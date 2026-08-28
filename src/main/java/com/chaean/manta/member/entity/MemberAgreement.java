@@ -23,24 +23,24 @@ import static lombok.AccessLevel.PROTECTED;
 @NoArgsConstructor(access = PROTECTED)
 public class MemberAgreement extends BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "member_id", nullable = false)
-    private Member member;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "member_id", nullable = false)
+	private Member member;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "legal_document_id", nullable = false)
-    private LegalDocument legalDocument;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "legal_document_id", nullable = false)
+	private LegalDocument legalDocument;
 
-    private MemberAgreement(Member member, LegalDocument legalDocument) {
-        this.member = member;
-        this.legalDocument = legalDocument;
-    }
+	private MemberAgreement(Member member, LegalDocument legalDocument) {
+		this.member = member;
+		this.legalDocument = legalDocument;
+	}
 
-    public static MemberAgreement create(Member member, LegalDocument legalDocument) {
-        return new MemberAgreement(member, legalDocument);
-    }
+	public static MemberAgreement create(Member member, LegalDocument legalDocument) {
+		return new MemberAgreement(member, legalDocument);
+	}
 }

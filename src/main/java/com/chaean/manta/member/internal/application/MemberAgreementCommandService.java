@@ -24,36 +24,38 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberAgreementCommandService {
 
-    private final MemberRepository memberRepository;
-    private final LegalDocumentRepository legalDocumentRepository;
-    private final MemberAgreementRepository memberAgreementRepository;
-    private final LegalDocumentQueryService legalDocumentQueryService;
+	private final MemberRepository memberRepository;
+	private final LegalDocumentRepository legalDocumentRepository;
+	private final MemberAgreementRepository memberAgreementRepository;
+	private final LegalDocumentQueryService legalDocumentQueryService;
 
-    @Transactional
-    public List<MemberAgreementProfile> createAgreements(long memberId, List<Long> requestedDocumentIds) {
-        memberRepository.findByIdAndDeletedAtIsNull(memberId)
-                .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
-        List<Long> documentIds = new ArrayList<>(new LinkedHashSet<>(requestedDocumentIds));
-        List<LegalDocument> documents = legalDocumentRepository.findAllById(documentIds);
-        if (documents.size() != documentIds.size()) {
-            throw BusinessException.of(ErrorCode.LEGAL_DOCUMENT_NOT_FOUND);
-        }
+	@Transactional
+	public List<MemberAgreementProfile> createAgreements(long memberId, List<Long> requestedDocumentIds) {
+		memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
+		List<Long> documentIds = new ArrayList<>(new LinkedHashSet<>(requestedDocumentIds));
+		List<LegalDocument> documents = legalDocumentRepository.findAllById(documentIds);
+		if (documents.size() != documentIds.size()) {
+			throw BusinessException.of(ErrorCode.LEGAL_DOCUMENT_NOT_FOUND);
+		}
 
-        List<Long> currentDocumentIds = legalDocumentQueryService.findCurrentDocuments().stream()
-                .map(LegalDocument::getId)
-                .toList();
-        if (!currentDocumentIds.containsAll(documentIds)) {
-            throw BusinessException.of(ErrorCode.LEGAL_DOCUMENT_NOT_AVAILABLE);
-        }
+		List<Long> currentDocumentIds = legalDocumentQueryService.findCurrentDocuments().stream()
+			.map(LegalDocument::getId)
+			.toList();
+		if (!currentDocumentIds.containsAll(documentIds)) {
+			throw BusinessException.of(ErrorCode.LEGAL_DOCUMENT_NOT_AVAILABLE);
+		}
 
-        for (Long documentId : documentIds) {
-            memberAgreementRepository.createIfAbsent(memberId, documentId);
-        }
+		for (Long documentId : documentIds) {
+			memberAgreementRepository.createIfAbsent(memberId, documentId);
+		}
 
-        Map<Long, MemberAgreement> agreements = memberAgreementRepository
-                .findByMember_IdAndLegalDocument_IdIn(memberId, documentIds).stream()
-                .collect(Collectors.toMap(agreement -> agreement.getLegalDocument().getId(), agreement -> agreement));
+		Map<Long, MemberAgreement> agreements = memberAgreementRepository
+			.findByMember_IdAndLegalDocument_IdIn(memberId, documentIds).stream()
+			.collect(Collectors.toMap(agreement -> agreement.getLegalDocument().getId(), agreement -> agreement));
 
-        return documentIds.stream().map(documentId -> MemberAgreementProfile.from(agreements.get(documentId))).toList();
-    }
+		return documentIds.stream()
+			.map(documentId -> MemberAgreementProfile.from(agreements.get(documentId)))
+			.toList();
+	}
 }

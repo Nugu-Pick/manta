@@ -20,26 +20,26 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberQueryService implements MemberAuthorization {
 
-    private final MemberRepository memberRepository;
+	private final MemberRepository memberRepository;
 
-    @Transactional(readOnly = true)
-    public MemberProfile getMyProfile(long memberId) {
-        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-                .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
-        return MemberProfile.from(member);
-    }
+	@Transactional(readOnly = true)
+	public MemberProfile getMyProfile(long memberId) {
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
+		return MemberProfile.from(member);
+	}
 
-    @Transactional(readOnly = true)
-    public PublicMemberProfile getPublicProfile(long memberId) {
-        Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
-                .orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
-        return PublicMemberProfile.from(member);
-    }
+	@Transactional(readOnly = true)
+	public PublicMemberProfile getPublicProfile(long memberId) {
+		Member member = memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.orElseThrow(() -> BusinessException.of(ErrorCode.MEMBER_NOT_FOUND));
+		return PublicMemberProfile.from(member);
+	}
 
-    @Override
-    @Transactional(readOnly = true)
-    public Optional<MemberRole> findRoleBySubject(String subject) {
-        return memberRepository.findBySupabaseSubjectAndDeletedAtIsNull(subject)
-                .map(Member::getRole);
-    }
+	@Override
+	@Transactional(readOnly = true)
+	public Optional<MemberRole> findRoleBySubject(String subject) {
+		return memberRepository.findBySupabaseSubjectAndDeletedAtIsNull(subject)
+			.map(Member::getRole);
+	}
 }

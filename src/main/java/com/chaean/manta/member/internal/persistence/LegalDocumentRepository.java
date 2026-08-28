@@ -9,10 +9,10 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface LegalDocumentRepository extends JpaRepository<LegalDocument, Long> {
 
-    @Query("""
-            SELECT document
-            FROM LegalDocument document
-            ORDER BY document.documentType ASC, document.createdAt DESC, document.id DESC
-            """)
-    List<LegalDocument> findCurrentDocuments();
+	@Query("""
+		SELECT document
+		FROM LegalDocument document
+		ORDER BY document.documentType ASC, document.createdAt DESC, document.id DESC
+		""")
+	List<LegalDocument> findCurrentDocuments();
 }

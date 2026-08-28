@@ -19,24 +19,26 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class MemberAgreementQueryService {
 
-    private final LegalDocumentQueryService legalDocumentQueryService;
-    private final MemberAgreementRepository memberAgreementRepository;
+	private final LegalDocumentQueryService legalDocumentQueryService;
+	private final MemberAgreementRepository memberAgreementRepository;
 
-    @Transactional(readOnly = true)
-    public void assertRequiredAgreements(long memberId) {
-        List<LegalDocument> requiredDocuments = legalDocumentQueryService.findCurrentDocuments().stream()
-                .filter(LegalDocument::isRequired)
-                .toList();
-        Set<Long> requiredDocumentIds = requiredDocuments.stream().map(LegalDocument::getId).collect(Collectors.toSet());
-        if (requiredDocumentIds.isEmpty()) {
-            return;
-        }
-        Set<Long> agreedDocumentIds = new HashSet<>(memberAgreementRepository
-                .findByMember_IdAndLegalDocument_IdIn(memberId, requiredDocumentIds).stream()
-                .map(agreement -> agreement.getLegalDocument().getId())
-                .toList());
-        if (!agreedDocumentIds.containsAll(requiredDocumentIds)) {
-            throw BusinessException.of(ErrorCode.REQUIRED_AGREEMENT_MISSING);
-        }
-    }
+	@Transactional(readOnly = true)
+	public void assertRequiredAgreements(long memberId) {
+		List<LegalDocument> requiredDocuments = legalDocumentQueryService.findCurrentDocuments().stream()
+			.filter(LegalDocument::isRequired)
+			.toList();
+		Set<Long> requiredDocumentIds = requiredDocuments.stream()
+			.map(LegalDocument::getId)
+			.collect(Collectors.toSet());
+		if (requiredDocumentIds.isEmpty()) {
+			return;
+		}
+		Set<Long> agreedDocumentIds = new HashSet<>(memberAgreementRepository
+			.findByMember_IdAndLegalDocument_IdIn(memberId, requiredDocumentIds).stream()
+			.map(agreement -> agreement.getLegalDocument().getId())
+			.toList());
+		if (!agreedDocumentIds.containsAll(requiredDocumentIds)) {
+			throw BusinessException.of(ErrorCode.REQUIRED_AGREEMENT_MISSING);
+		}
+	}
 }

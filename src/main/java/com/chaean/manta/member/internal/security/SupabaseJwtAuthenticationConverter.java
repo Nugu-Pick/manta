@@ -19,70 +19,73 @@ import org.springframework.stereotype.Component;
 
 @Component
 public final class SupabaseJwtAuthenticationConverter
-        implements Converter<Jwt, AbstractOAuth2TokenAuthenticationToken<Jwt>> {
+	implements Converter<Jwt, AbstractOAuth2TokenAuthenticationToken<Jwt>> {
 
-    private final MemberAuthorization memberAuthorization;
+	private final MemberAuthorization memberAuthorization;
 
-    public SupabaseJwtAuthenticationConverter(MemberAuthorization memberAuthorization) {
-        this.memberAuthorization = Objects.requireNonNull(
-                memberAuthorization, "memberAuthorization must not be null");
-    }
+	public SupabaseJwtAuthenticationConverter(MemberAuthorization memberAuthorization) {
+		this.memberAuthorization = Objects.requireNonNull(
+			memberAuthorization, "memberAuthorization must not be null");
+	}
 
-    @Override
-    public AbstractOAuth2TokenAuthenticationToken<Jwt> convert(Jwt jwt) {
-        String subject = jwt.getSubject();
-        String email = jwt.getClaimAsString("email");
-        if (subject == null || subject.isBlank() || email == null || email.isBlank()) {
-            throw new BadCredentialsException("Supabase JWT에 이메일이 없습니다.");
-        }
+	@Override
+	public AbstractOAuth2TokenAuthenticationToken<Jwt> convert(Jwt jwt) {
+		String subject = jwt.getSubject();
+		String email = jwt.getClaimAsString("email");
+		if (subject == null || subject.isBlank()
+			|| email == null || email.isBlank()) {
+			throw new BadCredentialsException("Supabase JWT에 이메일이 없습니다.");
+		}
 
-        AuthenticatedMember principal = new AuthenticatedMember(subject, email, provider(jwt));
-        // 관리자 권한은 JWT metadata가 아니라 Manta 회원 DB를 기준으로 부여한다.
-        return new AuthenticatedMemberAuthenticationToken(principal, jwt, authorities(subject));
-    }
+		AuthenticatedMember principal = new AuthenticatedMember(subject, email, provider(jwt));
+		// 관리자 권한은 JWT metadata가 아니라 Manta 회원 DB를 기준으로 부여한다.
+		return new AuthenticatedMemberAuthenticationToken(principal, jwt, authorities(subject));
+	}
 
-    private Collection<? extends GrantedAuthority> authorities(String subject) {
-        return memberAuthorization.findRoleBySubject(subject)
-                .map(MemberRole::authority)
-                .map(SimpleGrantedAuthority::new)
-                .<Collection<? extends GrantedAuthority>>map(List::of)
-                .orElseGet(List::of);
-    }
+	private Collection<? extends GrantedAuthority> authorities(String subject) {
+		return memberAuthorization.findRoleBySubject(subject)
+			.map(MemberRole::authority)
+			.map(SimpleGrantedAuthority::new)
+			.<Collection<? extends GrantedAuthority>>map(List::of)
+			.orElseGet(List::of);
+	}
 
-    private String provider(Jwt jwt) {
-        Map<String, Object> appMetadata = jwt.getClaim("app_metadata");
-        if (appMetadata == null) {
-            return "unknown";
-        }
-        Object provider = appMetadata.get("provider");
-        return provider instanceof String value && !value.isBlank() ? value : "unknown";
-    }
+	private String provider(Jwt jwt) {
+		Map<String, Object> appMetadata = jwt.getClaim("app_metadata");
+		if (appMetadata == null) {
+			return "unknown";
+		}
+		Object provider = appMetadata.get("provider");
+		return provider instanceof String value && !value.isBlank()
+			? value
+			: "unknown";
+	}
 
-    static final class AuthenticatedMemberAuthenticationToken
-            extends AbstractOAuth2TokenAuthenticationToken<Jwt> {
+	static final class AuthenticatedMemberAuthenticationToken
+		extends AbstractOAuth2TokenAuthenticationToken<Jwt> {
 
-        private final AuthenticatedMember principal;
+		private final AuthenticatedMember principal;
 
-        private AuthenticatedMemberAuthenticationToken(AuthenticatedMember principal, Jwt token,
-                Collection<? extends GrantedAuthority> authorities) {
-            super(token, authorities);
-            this.principal = principal;
-            setAuthenticated(true);
-        }
+		private AuthenticatedMemberAuthenticationToken(AuthenticatedMember principal, Jwt token,
+			Collection<? extends GrantedAuthority> authorities) {
+			super(token, authorities);
+			this.principal = principal;
+			setAuthenticated(true);
+		}
 
-        @Override
-        public Object getPrincipal() {
-            return principal;
-        }
+		@Override
+		public Object getPrincipal() {
+			return principal;
+		}
 
-        @Override
-        public String getName() {
-            return principal.subject();
-        }
+		@Override
+		public String getName() {
+			return principal.subject();
+		}
 
-        @Override
-        public Map<String, Object> getTokenAttributes() {
-            return getToken().getClaims();
-        }
-    }
+		@Override
+		public Map<String, Object> getTokenAttributes() {
+			return getToken().getClaims();
+		}
+	}
 }

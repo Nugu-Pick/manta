@@ -7,9 +7,13 @@ import com.chaean.manta.member.internal.application.MemberCommandService;
 import com.chaean.manta.member.internal.application.model.MemberAgreementProfile;
 import com.chaean.manta.member.web.dto.request.MemberAgreementRequest;
 import com.chaean.manta.member.web.dto.response.MemberAgreementResponse;
+
 import jakarta.validation.Valid;
+
 import java.util.List;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,10 +31,11 @@ public class MemberAgreementController {
 
 	@PostMapping
 	public ResponseEntity<ApiResponse<MemberAgreementResponse>> agree(
-			@AuthenticationPrincipal AuthenticatedMember authenticatedMember,
-			@Valid @RequestBody MemberAgreementRequest request) {
+		@AuthenticationPrincipal AuthenticatedMember authenticatedMember,
+		@Valid @RequestBody MemberAgreementRequest request) {
 		long memberId = memberCommandService.ensureProvisioned(authenticatedMember);
-		List<MemberAgreementProfile> agreements = memberAgreementCommandService.createAgreements(memberId, request.legalDocumentIds());
+		List<MemberAgreementProfile> agreements = memberAgreementCommandService.createAgreements(memberId,
+			request.legalDocumentIds());
 		MemberAgreementResponse response = MemberAgreementResponse.from(agreements);
 		return ResponseEntity.ok(ApiResponse.of(response));
 	}

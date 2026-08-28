@@ -11,7 +11,7 @@ import lombok.Getter;
 @MappedSuperclass
 public abstract class BaseDeletedEntity extends BaseEntity {
 
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
+	@Column(name = "deleted_at")
+	private Instant deletedAt;
 
 }

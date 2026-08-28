@@ -1,10 +1,10 @@
 package com.chaean.manta.member.entity;
 
 public enum MemberRole {
-    USER,
-    ADMIN;
+	USER,
+	ADMIN;
 
-    public String authority() {
-        return "ROLE_" + name();
-    }
+	public String authority() {
+		return "ROLE_" + name();
+	}
 }

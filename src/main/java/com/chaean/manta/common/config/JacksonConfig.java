@@ -13,8 +13,9 @@ import tools.jackson.databind.module.SimpleModule;
 @Configuration
 public class JacksonConfig {
 
-    @Bean
-    public JacksonModule instantModule() {
-        return new SimpleModule("manta-instant").addSerializer(Instant.class, new InstantSerializer());
-    }
+	@Bean
+	public JacksonModule instantModule() {
+		return new SimpleModule("manta-instant")
+			.addSerializer(Instant.class, new InstantSerializer());
+	}
 }

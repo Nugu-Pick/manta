@@ -4,10 +4,13 @@ import com.chaean.manta.member.entity.LegalDocument;
 import com.chaean.manta.member.entity.LegalDocumentType;
 import com.chaean.manta.member.internal.application.model.LegalDocumentProfile;
 import com.chaean.manta.member.internal.persistence.LegalDocumentRepository;
+
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +23,8 @@ public class LegalDocumentQueryService {
 	@Transactional(readOnly = true)
 	public List<LegalDocumentProfile> getCurrentDocuments() {
 		return findCurrentDocuments().stream()
-				.map(LegalDocumentProfile::from)
-				.toList();
+			.map(LegalDocumentProfile::from)
+			.toList();
 	}
 
 	@Transactional(readOnly = true)

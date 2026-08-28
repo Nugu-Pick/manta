@@ -88,8 +88,17 @@
 
 ## 코드 포맷
 
-- Java 코드는 150자 이내에서 한 줄 작성을 우선한다. 150자를 넘을 때만 다음 줄로 나누며, enum 상수·생성자 인자를 세로로 정렬하는 형식은 사용하지 않는다.
+- Java 코드 포맷은 `config/formatter/naver-intellij-formatter.xml`을 기준으로 작성한다. formatter의 자동 포맷을 기본으로 따르되, 가독성을 위한 의미 단위 줄바꿈은 별도로 적용한다.
+- Java 코드는 120자 이내에서 한 줄 작성을 우선하되, 120자 초과 여부만 기계적으로 기준 삼지 않는다. 코드가 과도하게 붙어 가독성이 떨어지면 120자 이내라도 의미 단위에 따라 줄바꿈하며, enum 상수·생성자 인자를 세로로 정렬하는 형식은 사용하지 않는다.
 - Java record component에 validation annotation이 있으면 annotation과 필드를 같은 줄에 쓰지 않는다. annotation 다음 줄에 같은 들여쓰기로 field type과 이름을 선언한다.
+- 메서드 선언과 호출부는 코드의 의미 단위가 드러나도록 적절히 줄바꿈한다. 메서드 체인, 조건식, 인자 목록, 람다·stream 연산은 가독성이 좋아지는 경우 나누되, 짧고 명확한 코드는 한 줄로 유지한다. 모든 호출을 무조건 한 줄씩 나누지는 않는다.
+- `stream()`과 같은 메서드 체인은 다음처럼 첫 호출 이후의 각 메서드 호출을 한 줄씩 작성한다.
+
+    ```java
+    List<LegalDocument> requiredDocuments = legalDocumentQueryService.findCurrentDocuments().stream()
+            .filter(LegalDocument::isRequired)
+            .toList();
+    ```
 - local variable은 명시적 타입을 우선하고 `var`는 사용하지 않는다. 타입이 코드 이해에 중요한 Java 백엔드 코드의 가독성을 유지한다.
 
 ## 데이터베이스와 Flyway
