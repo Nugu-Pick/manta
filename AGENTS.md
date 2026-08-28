@@ -132,6 +132,9 @@
 - API 문서의 기준은 Spring REST Docs 테스트다. 테스트에서 생성한 OpenAPI 문서를 Scalar로 렌더링한다.
 - REST Docs와 OpenAPI 산출물 사이에는 `restdocs-api-spec` 계열 adapter를 사용한다. Scalar는 OpenAPI 문서의 표시 계층이며 API 계약을 별도로 작성하지 않는다.
 - Controller에 문서용 annotation과 설명을 과도하게 넣지 않는다. 요청·응답 필드, 예제, 오류 계약은 Controller 통합 테스트에서 검증하고 문서화한다.
+- 문서화하는 API는 응답 Model의 모든 외부 필드를 표준 REST Docs `responseFields(...)` snippet으로 전달한다. 요청 Model도 `requestFields(...)` snippet으로 전달하며, `MockMvcRestDocumentationWrapper.document` 호출의 `ResourceSnippetParameters.builder()` 내부에 descriptor만 설정하지 않는다. 후자의 방식은 adapter가 필드를 추출하지 못해 OpenAPI `components.schemas`가 빈 `type: object`로 생성될 수 있다.
+- OpenAPI 생성 후 응답 schema에 실제 필드명·타입·optional 여부가 반영됐는지 확인한다. 응답 schema의 `properties`가 비어 있으면 문서 생성 성공으로 간주하지 않는다.
+- OpenAPI `requestSchema`·`responseSchema` 이름은 Java DTO의 simple class name과 동일하게 지정한다. 예를 들어 `MemberProfileUpdateRequest`와 `MemberMeResponse`는 `Schema.schema("MemberProfileUpdateRequest")`, `Schema.schema("MemberMeResponse")`를 사용하며, `api-v1-me-<hash>`처럼 경로와 hash로 생성되는 기본 이름은 사용하지 않는다.
 - `dev` 대상 PR과 `dev → main` Release PR의 Controller 통합 테스트에서 REST Docs snippet과 OpenAPI 파일을 생성한다. 생성된 파일은 검증 후 배포 산출물로만 사용한다.
 - 테스트는 `given`, `when`, `then` 단계가 드러나는 구조로 작성한다.
 - 테스트 메서드에는 `@DisplayName`을 사용하고, 테스트 설명은 한글로 작성한다.

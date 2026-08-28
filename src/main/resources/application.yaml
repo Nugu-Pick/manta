@@ -3,6 +3,14 @@ spring:
     name: manta
   profiles:
     default: local
+  web:
+    resources:
+      static-locations:
+        - file:./build/api-spec/
+        - classpath:/META-INF/resources/
+        - classpath:/resources/
+        - classpath:/static/
+        - classpath:/public/
   jpa:
     open-in-view: false
   modulith:

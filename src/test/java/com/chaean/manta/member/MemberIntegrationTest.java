@@ -1,11 +1,18 @@
 package com.chaean.manta.member;
 
-import static com.epages.restdocs.apispec.ResourceDocumentation.headerWithName;
-import static com.epages.restdocs.apispec.ResourceDocumentation.parameterWithName;
+import static com.epages.restdocs.apispec.Schema.schema;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
+import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
+import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
+import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,12 +37,14 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.restdocs.payload.JsonFieldType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @AutoConfigureMockMvc
 @AutoConfigureRestDocs(outputDir = "build/generated-snippets")
 @Import(MemberIntegrationTest.TestJwtConfiguration.class)
+@TestPropertySource(properties = "scalar.enabled=true")
 class MemberIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
@@ -43,6 +52,23 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Test
+    @DisplayName("Scalar 문서와 favicon 정적 리소스를 제공한다")
+    void servesScalarResources() throws Exception {
+        // given
+
+        // when & then
+        mockMvc.perform(get("/scalar"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.TEXT_HTML));
+        mockMvc.perform(get("/openapi3.yaml"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("openapi:")));
+        mockMvc.perform(get("/favicon.svg"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.valueOf("image/svg+xml")));
+    }
 
     @Test
     @DisplayName("같은 이메일의 서로 다른 Supabase subject는 별도 회원으로 프로비저닝한다")
@@ -56,11 +82,12 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andDo(MockMvcRestDocumentationWrapper.document(
                         "member/me",
                         ResourceSnippetParameters.builder()
+                                .responseSchema(schema("MemberMeResponse"))
                                 .summary("인증된 회원의 내 정보를 조회한다.")
-                                .description("검증된 Supabase JWT로 현재 회원 정보를 조회한다.")
-                                .requestHeaders(headerWithName("Authorization")
-                                        .description("Bearer Supabase access token"))
-                                .responseFields(
+                                .description("검증된 Supabase JWT로 현재 회원 정보를 조회한다."),
+                        requestHeaders(headerWithName("Authorization")
+                                        .description("Bearer Supabase access token")),
+                        responseFields(
                                         fieldWithPath("data.id").type(JsonFieldType.NUMBER).description("회원 ID"),
                                         fieldWithPath("data.nickname").type(JsonFieldType.STRING)
                                                 .description("회원 닉네임"),
@@ -124,11 +151,13 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andDo(MockMvcRestDocumentationWrapper.document(
                         "member/me-update",
                         ResourceSnippetParameters.builder()
+                                .requestSchema(schema("MemberProfileUpdateRequest"))
+                                .responseSchema(schema("MemberMeResponse"))
                                 .summary("인증된 회원의 내 정보를 수정한다.")
-                                .description("닉네임과 공개 프로필 정보를 수정한다.")
-                                .requestHeaders(headerWithName("Authorization")
-                                        .description("Bearer Supabase access token"))
-                                .requestFields(
+                                .description("닉네임과 공개 프로필 정보를 수정한다."),
+                        requestHeaders(headerWithName("Authorization")
+                                        .description("Bearer Supabase access token")),
+                        requestFields(
                                         fieldWithPath("nickname").type(JsonFieldType.STRING).description("회원 닉네임"),
                                         fieldWithPath("gender").type(JsonFieldType.STRING).description("성별")
                                                 .optional(),
@@ -138,18 +167,21 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                                                 .optional(),
                                         fieldWithPath("avatarAssetId").type(JsonFieldType.NUMBER)
                                                 .description("프로필 이미지 asset ID").optional()
-                                )
-                                .responseFields(
+                                ),
+                        responseFields(
                                         fieldWithPath("data.id").type(JsonFieldType.NUMBER).description("회원 ID"),
                                         fieldWithPath("data.nickname").type(JsonFieldType.STRING)
                                                 .description("회원 닉네임"),
                                         fieldWithPath("data.email").type(JsonFieldType.STRING)
                                                 .description("OAuth provider가 제공한 이메일"),
-                                        fieldWithPath("data.gender").type(JsonFieldType.STRING).description("성별"),
-                                        fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대"),
-                                        fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명"),
+                                        fieldWithPath("data.gender").type(JsonFieldType.STRING).description("성별")
+                                                .optional(),
+                                        fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대")
+                                                .optional(),
+                                        fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명")
+                                                .optional(),
                                         fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)
-                                                .description("프로필 이미지 asset ID"),
+                                                .description("프로필 이미지 asset ID").optional(),
                                         fieldWithPath("data.role").type(JsonFieldType.STRING).description("회원 역할")
                                 )
                 ));
@@ -183,7 +215,8 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
         Long memberId = readMemberId(result);
 
         // when & then
-        mockMvc.perform(get("/api/v1/members/" + memberId))
+        mockMvc.perform(org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.get(
+                        "/api/v1/members/{memberId}", memberId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(memberId))
                 .andExpect(jsonPath("$.data.nickname").isNotEmpty())
@@ -192,10 +225,11 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andDo(MockMvcRestDocumentationWrapper.document(
                         "member/public-profile",
                         ResourceSnippetParameters.builder()
+                                .responseSchema(schema("MemberPublicResponse"))
                                 .summary("공개 회원 프로필을 조회한다.")
-                                .description("인증 없이 회원의 공개 프로필만 조회한다.")
-                                .pathParameters(parameterWithName("memberId").description("회원 ID"))
-                                .responseFields(
+                                .description("인증 없이 회원의 공개 프로필만 조회한다."),
+                        pathParameters(parameterWithName("memberId").description("회원 ID")),
+                        responseFields(
                                         fieldWithPath("data.id").type(JsonFieldType.NUMBER).description("회원 ID"),
                                         fieldWithPath("data.nickname").type(JsonFieldType.STRING)
                                                 .description("회원 닉네임"),
