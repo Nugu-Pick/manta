@@ -12,6 +12,7 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,8 +23,10 @@ import java.util.Map;
 
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.chaean.manta.member.fixture.LegalDocumentFixture;
 import com.chaean.manta.support.PostgresIntegrationTest;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +55,11 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    void setUpLegalDocuments() {
+        LegalDocumentFixture.createCurrentDocuments(jdbcTemplate);
+    }
 
     @Test
     @DisplayName("Scalar 문서와 favicon 정적 리소스를 제공한다")
@@ -129,6 +137,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
         String token = "profile-subject";
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+        agreeToCurrentDocuments(token);
 
         // when & then
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
@@ -195,6 +204,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
         String longDescription = "가".repeat(161);
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+        agreeToCurrentDocuments(token);
 
         // when & then
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
@@ -257,6 +267,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 "$.data.nickname");
         mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer nickname-requester"))
                 .andExpect(status().isOk());
+        agreeToCurrentDocuments("nickname-requester");
 
         // when & then
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer nickname-requester")
@@ -275,6 +286,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn();
         Long memberId = readMemberId(result);
+        agreeToCurrentDocuments(token);
         mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -368,5 +380,18 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
     private Long readMemberId(MvcResult result) throws Exception {
         Number memberId = com.jayway.jsonpath.JsonPath.read(result.getResponse().getContentAsString(), "$.data.id");
         return memberId.longValue();
+    }
+
+    private void agreeToCurrentDocuments(String token) throws Exception {
+        MvcResult currentDocuments = mockMvc.perform(get("/api/v1/legal-documents/current"))
+                .andExpect(status().isOk())
+                .andReturn();
+        java.util.List<Number> documentIds = com.jayway.jsonpath.JsonPath.read(
+                currentDocuments.getResponse().getContentAsString(), "$.data[*].id");
+        String ids = documentIds.stream().map(Number::toString).collect(java.util.stream.Collectors.joining(","));
+        mockMvc.perform(post("/api/v1/me/agreements").header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"legalDocumentIds\":[" + ids + "]}"))
+                .andExpect(status().isOk());
     }
 }

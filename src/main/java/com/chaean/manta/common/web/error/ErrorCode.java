@@ -18,7 +18,12 @@ public enum ErrorCode implements ApiErrorCode {
     NICKNAME_GENERATION_FAILED("M102", "Nickname generation failed", "닉네임을 생성할 수 없습니다.",
             HttpStatus.CONFLICT),
     NICKNAME_INVALID("M103", "Invalid nickname", "닉네임이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
-    NICKNAME_ALREADY_TAKEN("M104", "Nickname already taken", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT);
+    NICKNAME_ALREADY_TAKEN("M104", "Nickname already taken", "이미 사용 중인 닉네임입니다.", HttpStatus.CONFLICT),
+    LEGAL_DOCUMENT_NOT_FOUND("M105", "Legal document not found", "약관 문서를 찾을 수 없습니다.", HttpStatus.NOT_FOUND),
+    LEGAL_DOCUMENT_NOT_AVAILABLE("M106", "Legal document not available", "현재 동의할 수 없는 약관입니다.",
+            HttpStatus.CONFLICT),
+    REQUIRED_AGREEMENT_MISSING("M107", "Required agreement missing", "필수 약관에 동의해야 합니다.",
+            HttpStatus.FORBIDDEN);
 
     private final String code;
     private final String title;
