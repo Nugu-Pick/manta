@@ -15,6 +15,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.net.URI;
 import java.util.List;
@@ -36,6 +37,7 @@ public class GlobalExceptionHandler {
 		List<FieldErrorResponse> fieldErrors = exception.getBindingResult().getFieldErrors().stream()
 			.map(error -> FieldErrorResponse.of(error.getField(), error.getDefaultMessage()))
 			.toList();
+
 		return createProblemDetail(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultDetail(),
 			request, fieldErrors);
 	}
@@ -45,6 +47,7 @@ public class GlobalExceptionHandler {
 		List<FieldErrorResponse> fieldErrors = exception.getConstraintViolations().stream()
 			.map(error -> FieldErrorResponse.of(error.getPropertyPath().toString(), error.getMessage()))
 			.toList();
+
 		return createProblemDetail(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultDetail(),
 			request, fieldErrors);
 	}
@@ -55,15 +58,23 @@ public class GlobalExceptionHandler {
 			request, List.of());
 	}
 
+	@ExceptionHandler(NoResourceFoundException.class)
+	public ProblemDetail handleNoResourceFound(NoResourceFoundException exception, HttpServletRequest request) {
+		return createProblemDetail(ErrorCode.RESOURCE_NOT_FOUND, ErrorCode.RESOURCE_NOT_FOUND.defaultDetail(),
+			request, List.of());
+	}
+
 	@ExceptionHandler(AuthenticationException.class)
 	public ProblemDetail handleAuthenticationException(AuthenticationException exception, HttpServletRequest request) {
 		ErrorCode errorCode = ErrorCode.AUTHENTICATION_REQUIRED;
+
 		return createProblemDetail(errorCode, errorCode.defaultDetail(), request, List.of());
 	}
 
 	@ExceptionHandler(AccessDeniedException.class)
 	public ProblemDetail handleAccessDeniedException(AccessDeniedException exception, HttpServletRequest request) {
 		ErrorCode errorCode = ErrorCode.ADMIN_ACCESS_DENIED;
+
 		return createProblemDetail(errorCode, errorCode.defaultDetail(), request, List.of());
 	}
 
@@ -71,7 +82,9 @@ public class GlobalExceptionHandler {
 	public ProblemDetail handleUnexpectedException(Exception exception, HttpServletRequest request) {
 		String path = request.getRequestURI();
 		log.error("처리하지 않은 예외가 발생했습니다. traceId={}, path={}", traceId(), path, exception);
+
 		ErrorCode errorCode = ErrorCode.INTERNAL_SERVER_ERROR;
+
 		return createProblemDetail(errorCode, errorCode.defaultDetail(), request, List.of());
 	}
 
@@ -84,6 +97,7 @@ public class GlobalExceptionHandler {
 		problemDetail.setProperty("code", errorCode.code());
 		problemDetail.setProperty("traceId", traceId());
 		problemDetail.setProperty("fieldErrors", fieldErrors);
+
 		return problemDetail;
 	}
 

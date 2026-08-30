@@ -2,12 +2,8 @@ package com.chaean.manta.member;
 
 import static com.epages.restdocs.apispec.Schema.schema;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
-import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
-import static org.springframework.restdocs.payload.PayloadDocumentation.requestFields;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -15,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -80,74 +77,21 @@ class LegalIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("필수 약관 미동의 회원은 회원 기능이 제한되고 동의 후 이용할 수 있다")
-	void limitsMemberFeaturesUntilAgreementsAreAccepted() throws Exception {
+	@DisplayName("추가 약관 동의 API를 제공하지 않고 활성 회원은 바로 프로필을 수정한다")
+	void doesNotProvideAgreementsApi() throws Exception {
 		// given
-		String token = "legal-member";
-		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isOk());
+		String token = Long.toString(insertActiveMember());
 
-		// when
-		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"description\":\"약관 동의 전\"}"))
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.code").value("M107"));
-		mockMvc.perform(delete("/api/v1/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isForbidden())
-			.andExpect(jsonPath("$.code").value("M107"));
-		List<Number> documentIds = currentDocumentIds();
-		String ids = documentIds.stream()
-			.map(Number::toString)
-			.collect(java.util.stream.Collectors.joining(","));
-
-		// then
+		// when & then
 		mockMvc.perform(post("/api/v1/me/agreements").header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"legalDocumentIds\":[" + ids + "]}"))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.agreements.length()").value(2))
-			.andExpect(jsonPath("$.data.agreements[0].legalDocumentId").isNumber())
-			.andExpect(jsonPath("$.data.agreements[0].documentType").isString())
-			.andExpect(jsonPath("$.data.agreements[0].title").isString())
-			.andExpect(jsonPath("$.data.agreements[0].createdAt").isString())
-			.andDo(MockMvcRestDocumentationWrapper.document(
-				"legal/agreements",
-				ResourceSnippetParameters.builder()
-					.requestSchema(schema("MemberAgreementRequest"))
-					.responseSchema(schema("MemberAgreementResponse"))
-					.summary("회원이 약관에 동의한다.")
-					.description("실제 약관 문서 ID를 기준으로 동의 이력을 멱등하게 저장한다."),
-				requestHeaders(headerWithName("Authorization")
-					.description("Bearer Supabase access token")),
-				requestFields(fieldWithPath("legalDocumentIds").type(JsonFieldType.ARRAY)
-					.description("동의할 약관 문서 ID 목록")),
-				responseFields(
-					fieldWithPath("data.agreements[].legalDocumentId").type(JsonFieldType.NUMBER)
-						.description("동의한 약관 문서 ID"),
-					fieldWithPath("data.agreements[].documentType").type(JsonFieldType.STRING)
-						.description("동의한 약관 유형"),
-					fieldWithPath("data.agreements[].title").type(JsonFieldType.STRING)
-						.description("동의한 약관 제목"),
-					fieldWithPath("data.agreements[].createdAt").type(JsonFieldType.STRING)
-						.description("약관 동의 생성 시각"))
-			))
-			.andExpect(status().isOk());
-		mockMvc.perform(post("/api/v1/me/agreements").header("Authorization", "Bearer " + token)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"legalDocumentIds\":[" + ids + "]}"))
-			.andExpect(status().isOk());
+				.content("{\"legalDocumentIds\":[1]}"))
+			.andExpect(status().isNotFound());
 		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"description\":\"약관 동의 완료\"}"))
+				.content("{\"description\":\"활성 회원 프로필\"}"))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.description").value("약관 동의 완료"));
-
-		Integer agreementCount = jdbcTemplate.queryForObject(
-			"SELECT COUNT(*) FROM orca.member_agreement ma "
-				+ "JOIN orca.member m ON m.id = ma.member_id "
-				+ "WHERE m.supabase_subject = ?", Integer.class, token);
-		assertThat(agreementCount).isEqualTo(2);
+			.andExpect(jsonPath("$.data.description").value("활성 회원 프로필"));
 	}
 
 	@Test
@@ -176,11 +120,11 @@ class LegalIntegrationTest extends PostgresIntegrationTest {
 			.contains(latestDocumentId);
 	}
 
-	private List<Number> currentDocumentIds() throws Exception {
-		MvcResult result = mockMvc.perform(get("/api/v1/legal-documents/current"))
-			.andExpect(status().isOk())
-			.andReturn();
-		return com.jayway.jsonpath.JsonPath.read(
-			result.getResponse().getContentAsString(), "$.data[*].id");
+	private Long insertActiveMember() {
+		return jdbcTemplate.queryForObject(
+			"INSERT INTO orca.member "
+				+ "(nickname, email, status, role, created_at, updated_at) "
+				+ "VALUES (?, 'legal@example.com', 'ACTIVE', 'USER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id",
+			Long.class, "테스트약관회원_" + UUID.randomUUID().toString().substring(0, 8));
 	}
 }

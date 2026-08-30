@@ -1,5 +1,7 @@
 package com.chaean.manta.member.entity;
 
+import java.time.Instant;
+
 import com.chaean.manta.common.persistence.BaseDeletedEntity;
 
 import jakarta.persistence.Column;
@@ -29,8 +31,15 @@ public class Member extends BaseDeletedEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "supabase_subject", unique = true)
-	private String supabaseSubject;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, length = 20)
+	private MemberStatus status;
+
+	@Column(name = "last_login_provider", length = 30)
+	private String lastLoginProvider;
+
+	@Column(name = "last_login_at")
+	private Instant lastLoginAt;
 
 	@Column(nullable = false, length = 32)
 	private String nickname;
@@ -54,15 +63,30 @@ public class Member extends BaseDeletedEntity {
 	@Column(length = 20)
 	private MemberRole role;
 
-	private Member(String supabaseSubject, String email, String nickname) {
-		this.supabaseSubject = supabaseSubject;
+	private Member(String email, String nickname) {
 		this.email = email;
 		this.nickname = nickname;
+		this.status = MemberStatus.ONBOARDING;
 		this.role = MemberRole.USER;
 	}
 
-	public static Member register(String supabaseSubject, String email, String nickname) {
-		return new Member(supabaseSubject, email, nickname);
+	public static Member register(String email, String nickname) {
+		return new Member(email, nickname);
+	}
+
+	public void recordLogin(String provider, Instant loggedInAt) {
+		this.lastLoginProvider = provider;
+		this.lastLoginAt = loggedInAt;
+	}
+
+	public void completeOnboarding(String gender, String ageGroup) {
+		if (status != MemberStatus.ONBOARDING) {
+			throw new IllegalStateException("member is not onboarding");
+		}
+
+		this.gender = gender;
+		this.ageGroup = ageGroup;
+		this.status = MemberStatus.ACTIVE;
 	}
 
 	public void updateProfile(String nickname, String gender, String ageGroup, String description,
@@ -84,8 +108,8 @@ public class Member extends BaseDeletedEntity {
 		}
 	}
 
-	public void clearLoginIdentity() {
-		supabaseSubject = null;
+	public void withdraw() {
+		status = MemberStatus.WITHDRAWN;
 		nickname = "탈퇴회원_" + id;
 	}
 

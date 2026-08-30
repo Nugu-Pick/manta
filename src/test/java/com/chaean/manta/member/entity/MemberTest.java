@@ -13,7 +13,7 @@ class MemberTest {
 	@DisplayName("프로필 수정 시 null인 값은 기존 값을 유지한다")
 	void keepsExistingProfileValuesWhenUpdateValueIsNull() {
 		// given
-		Member member = MemberFixture.createWithProfile(42L, "subject-1", "user@example.com", "기존닉네임",
+		Member member = MemberFixture.createWithProfile(42L, "user@example.com", "기존닉네임",
 			"FEMALE", "TWENTIES", "기존 설명", 99L);
 
 		// when

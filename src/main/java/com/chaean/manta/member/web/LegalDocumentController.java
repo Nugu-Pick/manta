@@ -27,6 +27,7 @@ public class LegalDocumentController {
 		List<LegalDocumentResponse> response = documents.stream()
 			.map(LegalDocumentResponse::from)
 			.toList();
+
 		return ResponseEntity.ok(ApiResponse.of(response));
 	}
 }

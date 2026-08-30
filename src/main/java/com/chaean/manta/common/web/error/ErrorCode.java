@@ -24,7 +24,22 @@ public enum ErrorCode implements ApiErrorCode {
 		HttpStatus.NOT_FOUND),
 	LEGAL_DOCUMENT_NOT_AVAILABLE("M106", "Legal document not available", "현재 동의할 수 없는 약관입니다.",
 		HttpStatus.CONFLICT),
-	REQUIRED_AGREEMENT_MISSING("M107", "Required agreement missing", "필수 약관에 동의해야 합니다.",
+	AUTH_PROVIDER_NOT_SUPPORTED("M108", "OAuth provider not supported", "지원하지 않는 OAuth provider입니다.",
+		HttpStatus.BAD_REQUEST),
+	AUTH_PROVIDER_REQUEST_FAILED("M109", "OAuth provider request failed", "OAuth provider 요청에 실패했습니다.",
+		HttpStatus.BAD_GATEWAY),
+	AUTH_STATE_INVALID("M110", "Invalid OAuth state", "OAuth 인증 상태가 유효하지 않습니다.",
+		HttpStatus.BAD_REQUEST),
+	AUTH_PROFILE_INVALID("M111", "Invalid OAuth profile", "OAuth provider 회원 정보를 확인할 수 없습니다.",
+		HttpStatus.BAD_GATEWAY),
+	REFRESH_TOKEN_INVALID("M113", "Invalid refresh token",
+		"Refresh Token이 유효하지 않거나 만료되었습니다.",
+		HttpStatus.UNAUTHORIZED),
+	ONBOARDING_REQUIRED_AGREEMENT_MISSING("M114", "Onboarding agreement missing",
+		"온보딩을 완료하려면 필수 약관에 동의해야 합니다.", HttpStatus.FORBIDDEN),
+	ONBOARDING_ALREADY_COMPLETED("M115", "Onboarding already completed", "이미 온보딩을 완료한 회원입니다.",
+		HttpStatus.CONFLICT),
+	MEMBER_STATUS_NOT_ACTIVE("M116", "Member is not active", "활성화된 회원만 이용할 수 있습니다.",
 		HttpStatus.FORBIDDEN);
 
 	private final String code;

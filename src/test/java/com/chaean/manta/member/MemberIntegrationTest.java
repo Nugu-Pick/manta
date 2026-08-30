@@ -12,7 +12,6 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -20,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
@@ -79,22 +79,35 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("같은 이메일의 서로 다른 Supabase subject는 별도 회원으로 프로비저닝한다")
-	void provisionsDifferentMembersForDifferentSubjects() throws Exception {
+	@DisplayName("DB에 없는 memberId로 요청하면 회원을 자동 생성하지 않는다")
+	void doesNotProvisionMemberFromRequest() throws Exception {
 		// given
+		String token = "999999";
+
+		// when & then
+		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
+			.andExpect(status().isNotFound())
+			.andExpect(jsonPath("$.code").value("M101"));
+	}
+
+	@Test
+	@DisplayName("JWT sub의 memberId로 기존 회원을 조회한다")
+	void readsExistingMemberByJwtSubject() throws Exception {
+		// given
+		String token = Long.toString(insertActiveMember("subject-test@example.com"));
 
 		// when
-		MvcResult first = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer subject-a"))
+		MvcResult first = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
 			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.email").value("user@example.com"))
+			.andExpect(jsonPath("$.data.email").value("subject-test@example.com"))
 			.andDo(MockMvcRestDocumentationWrapper.document(
 				"member/me",
 				ResourceSnippetParameters.builder()
 					.responseSchema(schema("MemberMeResponse"))
 					.summary("인증된 회원의 내 정보를 조회한다.")
-					.description("검증된 Supabase JWT로 현재 회원 정보를 조회한다."),
+					.description("Manta Access Token의 memberId로 현재 회원 정보를 조회한다."),
 				requestHeaders(headerWithName("Authorization")
-					.description("Bearer Supabase access token")),
+					.description("Bearer Manta access token")),
 				responseFields(
 					fieldWithPath("data.id").type(JsonFieldType.NUMBER).description("회원 ID"),
 					fieldWithPath("data.nickname").type(JsonFieldType.STRING)
@@ -114,30 +127,21 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 				)
 			))
 			.andReturn();
-		MvcResult repeat = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer subject-a"))
+		MvcResult repeat = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
 			.andExpect(status().isOk())
-			.andReturn();
-		MvcResult second = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer subject-b"))
-			.andExpect(status().isOk())
-			.andExpect(jsonPath("$.data.email").value("user@example.com"))
 			.andReturn();
 
 		// then
 		Long firstId = readMemberId(first);
 		Long repeatedId = readMemberId(repeat);
-		Long secondId = readMemberId(second);
 		org.assertj.core.api.Assertions.assertThat(repeatedId).isEqualTo(firstId);
-		org.assertj.core.api.Assertions.assertThat(firstId).isNotEqualTo(secondId);
 	}
 
 	@Test
 	@DisplayName("인증된 회원은 프로필을 수정할 수 있다")
 	void updatesMyProfile() throws Exception {
 		// given
-		String token = "profile-subject";
-		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isOk());
-		agreeToCurrentDocuments(token);
+		String token = Long.toString(insertActiveMember("profile@example.com"));
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
@@ -165,7 +169,7 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 					.summary("인증된 회원의 내 정보를 수정한다.")
 					.description("닉네임과 공개 프로필 정보를 수정한다."),
 				requestHeaders(headerWithName("Authorization")
-					.description("Bearer Supabase access token")),
+					.description("Bearer Manta access token")),
 				requestFields(
 					fieldWithPath("nickname").type(JsonFieldType.STRING).description("회원 닉네임"),
 					fieldWithPath("gender").type(JsonFieldType.STRING).description("성별")
@@ -200,11 +204,8 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	@DisplayName("설명은 기존 160자 제한을 넘어도 수정하고 응답한다")
 	void updatesAndReturnsLongDescription() throws Exception {
 		// given
-		String token = "long-description-subject";
+		String token = Long.toString(insertActiveMember("long-description@example.com"));
 		String longDescription = "가".repeat(161);
-		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isOk());
-		agreeToCurrentDocuments(token);
 
 		// when & then
 		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
@@ -218,8 +219,9 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	@DisplayName("공개 회원 프로필은 인증 없이 조회할 수 있다")
 	void getsPublicProfileWithoutAuthentication() throws Exception {
 		// given
+		Long expectedMemberId = insertActiveMember("public-profile@example.com");
 		MvcResult result = mockMvc.perform(get("/api/v1/me")
-				.header("Authorization", "Bearer public-profile-subject"))
+				.header("Authorization", "Bearer " + expectedMemberId))
 			.andExpect(status().isOk())
 			.andReturn();
 		Long memberId = readMemberId(result);
@@ -259,18 +261,16 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	@DisplayName("사용 중인 닉네임으로 프로필을 수정하면 충돌 오류를 반환한다")
 	void rejectsDuplicateNickname() throws Exception {
 		// given
+		Long ownerId = insertActiveMember("nickname-owner@example.com");
 		MvcResult first = mockMvc.perform(get("/api/v1/me")
-				.header("Authorization", "Bearer nickname-owner"))
-			.andExpect(status().isOk())
-			.andReturn();
+				.header("Authorization", "Bearer " + ownerId))
+			.andExpect(status().isOk()).andReturn();
 		String nickname = com.jayway.jsonpath.JsonPath.read(first.getResponse().getContentAsString(),
 			"$.data.nickname");
-		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer nickname-requester"))
-			.andExpect(status().isOk());
-		agreeToCurrentDocuments("nickname-requester");
+		String requester = Long.toString(insertActiveMember("nickname-requester@example.com"));
 
 		// when & then
-		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer nickname-requester")
+		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + requester)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"nickname\":\"" + nickname + "\"}"))
 			.andExpect(status().isConflict())
@@ -281,12 +281,8 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	@DisplayName("회원 탈퇴 시 로그인 식별자만 정리하고 공개 프로필을 닫는다")
 	void deletesMemberAndClearsLoginIdentity() throws Exception {
 		// given
-		String token = "withdraw-subject";
-		MvcResult result = mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isOk())
-			.andReturn();
-		Long memberId = readMemberId(result);
-		agreeToCurrentDocuments(token);
+		Long memberId = insertActiveMember("withdraw@example.com");
+		String token = Long.toString(memberId);
 		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("""
@@ -308,11 +304,11 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 			.andExpect(status().isNotFound())
 			.andExpect(jsonPath("$.code").value("M101"));
 		Map<String, Object> member = jdbcTemplate.queryForMap(
-			"SELECT supabase_subject, nickname, email, gender, age_group, description, avatar_asset_id, deleted_at "
+			"SELECT status, nickname, email, gender, age_group, description, avatar_asset_id, deleted_at "
 				+ "FROM orca.member WHERE id = ?", memberId);
-		org.assertj.core.api.Assertions.assertThat(member.get("supabase_subject")).isNull();
+		org.assertj.core.api.Assertions.assertThat(member.get("status")).isEqualTo("WITHDRAWN");
 		org.assertj.core.api.Assertions.assertThat(member.get("nickname")).isEqualTo("탈퇴회원_" + memberId);
-		org.assertj.core.api.Assertions.assertThat(member.get("email")).isEqualTo("user@example.com");
+		org.assertj.core.api.Assertions.assertThat(member.get("email")).isEqualTo("withdraw@example.com");
 		org.assertj.core.api.Assertions.assertThat(member.get("gender")).isEqualTo("FEMALE");
 		org.assertj.core.api.Assertions.assertThat(member.get("age_group")).isEqualTo("TWENTIES");
 		org.assertj.core.api.Assertions.assertThat(member.get("description")).isEqualTo("새로운 맛집을 찾습니다.");
@@ -321,12 +317,12 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
-	@DisplayName("필수 JWT claim이 없으면 인증을 거부한다")
-	void rejectsJwtWithoutEmail() throws Exception {
+	@DisplayName("memberId가 아닌 JWT sub는 인증을 거부한다")
+	void rejectsJwtWithInvalidMemberId() throws Exception {
 		// given
 
 		// when & then
-		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer missing-email"))
+		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer invalid-member-id"))
 			.andExpect(status().isUnauthorized())
 			.andExpect(jsonPath("$.code").value("M002"));
 	}
@@ -335,9 +331,10 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	@DisplayName("일반 회원이 관리자 API에 접근하면 인가를 거부한다")
 	void rejectsNonAdminForAdminApi() throws Exception {
 		// given
+		String token = Long.toString(insertActiveMember("normal-member@example.com"));
 
 		// when & then
-		mockMvc.perform(get("/api/v1/admin/members").header("Authorization", "Bearer normal-member"))
+		mockMvc.perform(get("/api/v1/admin/members").header("Authorization", "Bearer " + token))
 			.andExpect(status().isForbidden())
 			.andExpect(jsonPath("$.code").value("M003"));
 	}
@@ -362,13 +359,10 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 		JwtDecoder jwtDecoder() {
 			return token -> {
 				Map<String, Object> claims = new HashMap<>();
-				claims.put("iss", "http://127.0.0.1:54321/auth/v1");
-				claims.put("sub", token);
-				claims.put("aud", "authenticated");
-				if (!token.equals("missing-email")) {
-					claims.put("email", "user@example.com");
-				}
-				claims.put("app_metadata", Map.of("provider", token.equals("subject-a") ? "google" : "kakao"));
+					claims.put("iss", "http://127.0.0.1:54321/auth/v1");
+					claims.put("sub", token);
+					claims.put("aud", "authenticated");
+				claims.put("email", "user@example.com");
 				claims.put("iat", Instant.now().minusSeconds(10));
 				claims.put("exp", Instant.now().plusSeconds(300));
 				return Jwt.withTokenValue(token)
@@ -384,18 +378,11 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 		return memberId.longValue();
 	}
 
-	private void agreeToCurrentDocuments(String token) throws Exception {
-		MvcResult currentDocuments = mockMvc.perform(get("/api/v1/legal-documents/current"))
-			.andExpect(status().isOk())
-			.andReturn();
-		java.util.List<Number> documentIds = com.jayway.jsonpath.JsonPath.read(
-			currentDocuments.getResponse().getContentAsString(), "$.data[*].id");
-		String ids = documentIds.stream()
-			.map(Number::toString)
-			.collect(java.util.stream.Collectors.joining(","));
-		mockMvc.perform(post("/api/v1/me/agreements").header("Authorization", "Bearer " + token)
-				.contentType(MediaType.APPLICATION_JSON)
-				.content("{\"legalDocumentIds\":[" + ids + "]}"))
-			.andExpect(status().isOk());
+	private Long insertActiveMember(String email) {
+		return jdbcTemplate.queryForObject(
+			"INSERT INTO orca.member "
+				+ "(nickname, email, status, role, created_at, updated_at) "
+				+ "VALUES (?, ?, 'ACTIVE', 'USER', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP) RETURNING id",
+			Long.class, "테스트회원_" + UUID.randomUUID().toString().substring(0, 8), email);
 	}
 }

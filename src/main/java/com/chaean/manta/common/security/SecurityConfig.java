@@ -30,12 +30,14 @@ public class SecurityConfig {
 				.requestMatchers("/actuator/health/**", "/scalar", "/openapi3.yaml", "/error").permitAll()
 				.requestMatchers("/api/v1/members/**").permitAll()
 				.requestMatchers("/api/v1/legal-documents/**").permitAll()
+				.requestMatchers("/api/v1/auth/**").permitAll()
 				.requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
 				.requestMatchers("/api/v1/**").authenticated()
 				.anyRequest().permitAll())
 			.oauth2ResourceServer(resourceServer -> resourceServer
 				.authenticationEntryPoint(authenticationEntryPoint)
 				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+
 		return http.build();
 	}
 }

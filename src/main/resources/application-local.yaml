@@ -26,13 +26,6 @@ spring:
     properties:
       hibernate:
         default_schema: orca
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${AUTH_ISSUER_URI}
-          jwk-set-uri: ${AUTH_JWKS_URI}
-
 logging:
   pattern:
     level: '%clr(traceId=%X{traceId:-}){yellow} %clr(%5p){cyan}'
