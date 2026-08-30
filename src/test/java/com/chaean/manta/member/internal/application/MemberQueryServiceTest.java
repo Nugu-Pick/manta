@@ -28,7 +28,7 @@ class MemberQueryServiceTest {
 	@DisplayName("회원 조회 Service는 HTTP 응답 DTO가 아닌 애플리케이션 조회 모델을 반환한다")
 	void returnsApplicationReadModel() {
 		// given
-		Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
+		Member member = MemberFixture.createActive(42L, "user@example.com", "누구픽_abc12345");
 		when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
 		MemberQueryService service = new MemberQueryService(memberRepository);
 
@@ -42,16 +42,15 @@ class MemberQueryServiceTest {
 	}
 
 	@Test
-	@DisplayName("회원 subject로 회원 역할을 조회한다")
-	void findsRoleBySubject() {
+	@DisplayName("회원 ID로 회원 역할을 조회한다")
+	void findsRoleByMemberId() {
 		// given
-		Member member = MemberFixture.create(42L, "subject-1", "user@example.com", "누구픽_abc12345");
-		when(memberRepository.findBySupabaseSubjectAndDeletedAtIsNull("subject-1"))
-			.thenReturn(Optional.of(member));
+		Member member = MemberFixture.createActive(42L, "user@example.com", "누구픽_abc12345");
+		when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
 		MemberQueryService service = new MemberQueryService(memberRepository);
 
 		// when
-		Optional<MemberRole> result = service.findRoleBySubject("subject-1");
+		Optional<MemberRole> result = service.findRoleByMemberId(42L);
 
 		// then
 		assertThat(result).contains(MemberRole.USER);
@@ -61,8 +60,8 @@ class MemberQueryServiceTest {
 	@DisplayName("공개 회원 조회는 이메일과 역할을 노출하지 않는 조회 모델을 반환한다")
 	void returnsPublicProfile() {
 		// given
-		Member member = MemberFixture.createWithProfile(42L, "subject-1", "user@example.com", "누구픽_abc12345",
-			"FEMALE", "TWENTIES", "소개", 99L);
+		Member member = MemberFixture.createActive(42L, "user@example.com", "누구픽_abc12345");
+		member.updateProfile("누구픽_abc12345", "FEMALE", "TWENTIES", "소개", 99L);
 		when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
 		MemberQueryService service = new MemberQueryService(memberRepository);
 

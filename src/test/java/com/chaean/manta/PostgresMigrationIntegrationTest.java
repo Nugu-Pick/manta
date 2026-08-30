@@ -19,8 +19,8 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
 	private JdbcTemplate jdbcTemplate;
 
 	@Test
-	@DisplayName("Flyway migration이 회원·약관 테이블과 약관 관계를 생성한다")
-	void flywayMigrationCreatesOrcaSchemaAndMemberTable() {
+	@DisplayName("Flyway migration이 Supabase 식별자와 OAuth transaction 없이 자체 인증 schema를 생성한다")
+	void flywayMigrationCreatesSelfManagedAuthSchema() {
 		Boolean orcaSchemaExists = jdbcTemplate.queryForObject(
 			"SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'orca')",
 			Boolean.class
@@ -44,6 +44,56 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
 		Boolean memberAgreementTableExists = jdbcTemplate.queryForObject(
 			"SELECT to_regclass('orca.member_agreement') IS NOT NULL",
 			Boolean.class
+		);
+		Boolean memberIdentityTableExists = jdbcTemplate.queryForObject(
+			"SELECT to_regclass('orca.member_identity') IS NOT NULL",
+			Boolean.class
+		);
+		Boolean refreshTokenTableExists = jdbcTemplate.queryForObject(
+			"SELECT to_regclass('orca.refresh_token') IS NOT NULL",
+			Boolean.class
+		);
+		Boolean oauthTransactionTableExists = jdbcTemplate.queryForObject(
+			"SELECT to_regclass('orca.oauth_transaction') IS NOT NULL",
+			Boolean.class
+		);
+		Integer supabaseSubjectColumnCount = jdbcTemplate.queryForObject(
+			"SELECT COUNT(*) FROM information_schema.columns "
+				+ "WHERE table_schema = 'orca' AND table_name = 'member' "
+				+ "AND column_name = 'supabase_subject'",
+			Integer.class
+		);
+		Integer memberStatusColumnCount = jdbcTemplate.queryForObject(
+			"SELECT COUNT(*) FROM information_schema.columns "
+				+ "WHERE table_schema = 'orca' AND table_name = 'member' "
+				+ "AND column_name IN ('status', 'last_login_provider', 'last_login_at')",
+			Integer.class
+		);
+		Integer refreshTokenUniqueIndexCount = jdbcTemplate.queryForObject(
+			"SELECT COUNT(*) FROM pg_indexes "
+				+ "WHERE schemaname = 'orca' AND tablename = 'refresh_token' "
+				+ "AND indexdef LIKE '%UNIQUE%' AND indexdef LIKE '%token_hash%'",
+			Integer.class
+		);
+		Integer activeEmailUniqueIndexCount = jdbcTemplate.queryForObject(
+			"SELECT COUNT(*) FROM pg_indexes "
+				+ "WHERE schemaname = 'orca' AND tablename = 'member' "
+				+ "AND indexname = 'uq_member_active_email'",
+			Integer.class
+		);
+		Integer activeEmailLowerIndexCount = jdbcTemplate.queryForObject(
+			"SELECT COUNT(*) FROM pg_indexes "
+				+ "WHERE schemaname = 'orca' AND tablename = 'member' "
+				+ "AND indexname = 'uq_member_active_email' AND LOWER(indexdef) LIKE '%lower(%email%'",
+			Integer.class
+		);
+		Integer selfManagedForeignKeyCount = jdbcTemplate.queryForObject(
+			"SELECT COUNT(*) FROM pg_constraint c "
+				+ "JOIN pg_namespace n ON n.oid = c.connamespace "
+				+ "JOIN pg_class t ON t.oid = c.conrelid "
+				+ "WHERE n.nspname = 'orca' AND t.relname IN "
+				+ "('member_identity', 'refresh_token') AND c.contype = 'f'",
+			Integer.class
 		);
 		Integer agreementForeignKeyCount = jdbcTemplate.queryForObject(
 			"SELECT COUNT(*) FROM pg_constraint c "
@@ -81,6 +131,15 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
 		assertThat(pgTrgmExists).isTrue();
 		assertThat(legalDocumentTableExists).isTrue();
 		assertThat(memberAgreementTableExists).isTrue();
+		assertThat(memberIdentityTableExists).isTrue();
+		assertThat(refreshTokenTableExists).isTrue();
+		assertThat(oauthTransactionTableExists).isFalse();
+		assertThat(supabaseSubjectColumnCount).isZero();
+		assertThat(memberStatusColumnCount).isEqualTo(3);
+		assertThat(refreshTokenUniqueIndexCount).isEqualTo(1);
+		assertThat(activeEmailUniqueIndexCount).isEqualTo(1);
+		assertThat(activeEmailLowerIndexCount).isEqualTo(1);
+		assertThat(selfManagedForeignKeyCount).isZero();
 		assertThat(agreementForeignKeyCount).isZero();
 		assertThat(legalDocumentVersionColumnCount).isZero();
 		assertThat(legalDocumentCount).isZero();

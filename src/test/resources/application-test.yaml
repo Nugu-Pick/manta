@@ -14,3 +14,16 @@ spring:
     properties:
       hibernate:
         default_schema: orca
+
+manta:
+  auth:
+    issuer: http://localhost:8080
+    audience: manta-test
+    jwt-secret: test-only-secret-value-with-at-least-32-bytes
+    access-token-ttl: PT30M
+    refresh-token-ttl: P30D
+    refresh-cookie-name: manta_test_refresh_token
+    oauth-state-cookie-name: manta_test_oauth_state
+    oauth-verifier-cookie-name: manta_test_oauth_verifier
+    frontend-callback-uri: http://localhost:3000/auth/callback
+    oauth-authorization-ttl: PT10M

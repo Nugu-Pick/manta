@@ -30,10 +30,12 @@ public class LegalDocumentQueryService {
 	@Transactional(readOnly = true)
 	public List<LegalDocument> findCurrentDocuments() {
 		List<LegalDocument> documents = legalDocumentRepository.findCurrentDocuments();
+
 		Map<LegalDocumentType, LegalDocument> currentDocuments = new LinkedHashMap<>();
 		for (LegalDocument document : documents) {
 			currentDocuments.putIfAbsent(document.getDocumentType(), document);
 		}
+
 		return List.copyOf(currentDocuments.values());
 	}
 }

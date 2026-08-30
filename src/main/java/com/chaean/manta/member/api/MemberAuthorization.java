@@ -6,5 +6,5 @@ import com.chaean.manta.member.entity.MemberRole;
 
 public interface MemberAuthorization {
 
-	Optional<MemberRole> findRoleBySubject(String subject);
+	Optional<MemberRole> findRoleByMemberId(long memberId);
 }
