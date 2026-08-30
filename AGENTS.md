@@ -15,6 +15,7 @@
 - 도메인 우선 Application Module은 `member`, `content`, `community`를 사용한다.
 - `common`은 HTTP 계약·예외·인증 principal·영속성 감사·시간·직렬화·QueryDSL처럼 여러 모듈이 공유하는 기술 공통 코드만 둔다. 도메인 Entity·Repository·비즈니스 Service는 두지 않는다.
 - `common` 내부는 성격별 하위 디렉터리로 나눈다. 예를 들어 `common/web/response`, `common/web/error`, `common/web/filter`, `common/config`, `common/persistence`, `common/serialization`을 사용하며 서로 다른 성격의 클래스를 한 디렉터리에 섞지 않는다.
+- 환경변수·설정 바인딩 객체는 `<module>/config`에 둔다. 여러 모듈이 공유하는 설정·Bean만 `common/config`에 두며, 특정 adapter를 조립하는 `@Configuration`은 해당 adapter 경계에 둘 수 있다. 공통 설정 클래스 이름은 `*Config` 형태를 우선한다.
 - `common`은 `spring.modulith.detection-strategy: explicitly-annotated` 설정에서 `@ApplicationModule`을 선언하지 않는 기술 공통 패키지로 유지한다. 도메인 모듈처럼 별도 공개 API·Repository·Service 경계를 만들지 않는다.
 - 공통 `layer` 패키지나 사용처 하나뿐인 추상화 패키지를 먼저 만들지 않는다.
 - 변경 전 기존 클래스와 함수의 사용처를 먼저 확인하고 재사용한다. 요청하지 않은 추상화·모듈·기능은 추가하지 않으며, 필요한 변경은 최소 범위로 수행한다.
@@ -22,13 +23,13 @@
 - Spring Modulith 경계를 유지하며 cross-module 양방향 JPA 연관관계와 cascade를 만들지 않는다.
 - 다른 모듈에서 Entity가 필요한 경우에는 소유 모듈의 `<module>.entity` Named Interface를 통해서만 참조한다.
 - 회원 권한 조회 계약은 `member/api`에 두고, DB 조회 구현은 `member/internal/application`의 Query Service가 담당한다. 공개 계약은 `MemberRole` 같은 도메인 값만 반환하며 `GrantedAuthority`나 HTTP DTO를 노출하지 않는다.
-- JWT를 `Authentication`으로 변환하고 `MemberRole`을 `ROLE_*`로 매핑하는 코드는 `member/internal/security`에 둔다. `common/security`에는 공통 SecurityFilterChain과 인증·인가 오류 처리만 둔다.
-- `SupabaseJwtAuthenticationConverter`의 현재 위치와 계층 책임을 임의로 `convert`, `authentication` 등으로 이동하지 않는다. 패키지 이동은 의존성 방향을 확인하고 설계 합의 후 수행한다.
+- Manta JWT를 `Authentication`으로 변환하고 `MemberRole`을 `ROLE_*`로 매핑하는 코드는 `member/internal/security`에 둔다. `common/security`에는 공통 SecurityFilterChain과 인증·인가 오류 처리만 둔다.
 - 아키텍처 질문에는 현재 구현과 제안 구조를 구분해 설명하며, 구현·변경 요청이 없는 토론 단계에서는 코드를 수정하지 않는다.
 
 ## 브랜치와 Pull Request
 
 - `main`은 운영 배포 기준이자 기본 브랜치로 사용하고, `dev`는 개발 통합 브랜치로 사용한다.
+- GitHub 작업은 등록된 GitHub 연결 도구를 우선 사용하고, 로컬 셸의 `gh` 명령은 `sandbox_permissions: require_escalated`에 해당하는 네트워크 허용 실행으로 수행하며, 연결 실패를 인증 문제로 단정해 `gh auth login`을 반복 요구하지 않는다.
 - 모든 구현 작업은 반드시 `Issue 생성 → Issue 번호 확인 → Issue 번호를 포함한 브랜치 생성 → 구현 → 검증 → PR 생성` 순서로 진행한다. Issue 없이 먼저 브랜치를 만들거나, 검증 전에 PR을 생성하지 않는다.
 - 기능·버그 브랜치는 `dev`에서 생성해 `dev`로 병합한다. 운영 반영은 `dev`에서 `main`으로 Release PR을 만든다.
 - 브랜치명은 `feat/123-oauth-login`, `fix/145-jwks-validation`처럼 유형·Issue 번호·짧은 설명을 lowercase kebab-case로 작성한다. 괄호는 사용하지 않고 `/`, `-`처럼 GitHub에서 안전한 구분자만 사용한다.
@@ -58,13 +59,16 @@
 - 상태를 변경하는 유스케이스 Service는 `*CommandService`, 조회 전용 유스케이스 Service는 `*QueryService`로 명명한다. `CommandService`는 생성·수정·삭제와 transaction 경계를, `QueryService`는 조회 조합과 read model 변환을 담당하며 서로의 책임을 섞지 않는다.
 - Service는 유스케이스 orchestration과 transaction 경계를 담당한다. 저장 방식, JSON 직렬화, Controller 전용 타입을 소유하지 않는다. Query·Command Service는 `web.dto`를 반환하지 않고 application read model 또는 도메인 결과를 반환하며, Controller가 HTTP DTO로 변환한다.
 - `internal/application`의 `*CommandService`, `*QueryService`는 application 패키지에 두고, Service용 command/read model은 `internal/application/model`에 둔다. command/query 기준으로 하위 디렉터리를 나누지 않으며, 기능별 하위 디렉터리가 실제로 필요해질 때만 추가한다.
+- Service·Converter 내부에 application 결과 DTO나 `Authentication` 구현을 중첩 선언하지 않고 별도 top-level 파일로 둔다. 설정 바인딩의 하위 구조처럼 해당 설정 안에서만 의미가 있는 record 중첩은 예외로 허용한다.
 - 모듈 간 동기 호출 계약은 `<module>.api`에 두고, 모듈 간 비동기 이벤트 계약은 `<module>.api.event`에 둔다. 이벤트 record는 `*Event` 접미사를 사용해 동기 API와 구분한다.
 - Repository는 저장·조회·QueryDSL/native query와 persistence projection만 담당한다. 권한 판단·상태 전이·HTTP 응답 조립을 Repository에 넣지 않는다.
 - 공통 `ApiErrorCode`는 HTTP 변환 계약을 제공하고, 공통·기능별 오류 코드는 `common.web.error.ErrorCode`에 정의한다. enum 내부에 `// Common`, `// Member`처럼 기능 범위를 주석으로 구분하며 별도의 `MemberErrorCode` enum을 만들지 않는다.
 - 외부 API 오류 코드는 Manta 전용 `M` 접두사와 세 자리 숫자(`M001`, `M002`)를 사용한다. enum 상수명은 의미를 표현하고 `code()`는 명시적인 외부 코드를 반환한다. 공통 오류는 `M001`부터 `M099`, `member`는 `M100`부터 `M199`, `content`는 `M200`부터 `M299`, `community`는 `M300`부터 `M399` 범위에서 할당한다.
 - DTO·응답 record의 생성자 인자 검증처럼 호출자 입력의 기본 불변식 검증에는 `IllegalArgumentException`을 사용한다. `BusinessException`은 도메인·애플리케이션 규칙 위반처럼 안정적인 API `ApiErrorCode`가 필요한 경우에만 사용한다.
 - 반복되는 생성·변환 규칙은 `of`, `from`, `create` 같은 정적 팩토리를 우선 사용한다. 선택지가 실제로 여러 개 생길 때만 Factory·Strategy·Specification·Adapter를 도입하며, 한 구현만 있는 추상화나 패턴 이름을 위한 패턴은 만들지 않는다.
+- HTTP DTO와 application 경계 결과는 외부 호출부에서 직접 `new`하지 말고 `of`, `from`, `create` 같은 정적 팩토리를 사용한다. provider 응답을 담는 단순 내부 value record처럼 생성 규칙이 없는 값은 불필요한 팩토리를 추가하지 않는다.
 - 단일 호출을 단순 전달하거나 이름만 바꾸는 래퍼 메서드는 만들지 않는다. 실제로 다른 규칙을 명시하거나 둘 이상의 호출처에서 공통 규칙을 공유할 때만 메서드를 분리한다.
+- 제품명 접두사를 클래스명에 반복하지 않는다. 패키지와 모듈이 책임을 표현하므로 `Manta`는 애플리케이션 진입점처럼 외부 식별이 필요한 경우에만 사용한다.
 - Lombok으로 생성자·getter·builder 등 반복 보일러플레이트를 줄인다. 다만 Entity에는 `@Data`와 무분별한 `@Setter`를 사용하지 않고, 필요한 접근자와 상태 전이 메서드만 공개한다.
 - Lombok annotation processor는 이미 활성화되어 있으므로 동일한 코드를 수동으로 반복하지 않는다. Lombok이 도메인 규칙을 숨기거나 Entity의 상태 변경 경계를 흐리면 명시적인 Java 코드를 우선한다.
 - 설정 클래스는 기본적으로 `@Configuration`을 사용한다. Bean 간 의존성은 `@Bean` 메서드 파라미터로 주입하고, Bean 메서드를 직접 호출해야 하는 설정에만 `proxyBeanMethods = true`를 명시한다.
@@ -90,6 +94,7 @@
 
 - Java 코드 포맷은 `config/formatter/naver-intellij-formatter.xml`을 기준으로 작성한다. formatter의 자동 포맷을 기본으로 따르되, 가독성을 위한 의미 단위 줄바꿈은 별도로 적용한다.
 - Java 코드는 120자 이내에서 한 줄 작성을 우선하되, 120자 초과 여부만 기계적으로 기준 삼지 않는다. 코드가 과도하게 붙어 가독성이 떨어지면 120자 이내라도 의미 단위에 따라 줄바꿈하며, enum 상수·생성자 인자를 세로로 정렬하는 형식은 사용하지 않는다.
+- 필드·생성자·공개 메서드·private helper와 유스케이스의 단계 사이에는 의미가 바뀌는 지점에 빈 줄을 둔다. 모든 문장이나 메서드 호출을 기계적으로 한 줄씩 분리하지 않는다.
 - Java record component에 validation annotation이 있으면 annotation과 필드를 같은 줄에 쓰지 않는다. annotation 다음 줄에 같은 들여쓰기로 field type과 이름을 선언한다.
 - 메서드 선언과 호출부는 코드의 의미 단위가 드러나도록 적절히 줄바꿈한다. 메서드 체인, 조건식, 인자 목록, 람다·stream 연산은 가독성이 좋아지는 경우 나누되, 짧고 명확한 코드는 한 줄로 유지한다. 모든 호출을 무조건 한 줄씩 나누지는 않는다.
 - `stream()`과 같은 메서드 체인은 다음처럼 첫 호출 이후의 각 메서드 호출을 한 줄씩 작성한다.
@@ -119,17 +124,21 @@
 ## 외부 서비스와 비밀값
 
 - 인증, 데이터베이스, object storage, CDN, 지도 provider는 인프라 경계로 취급하고 도메인 코드에 provider 종속을 퍼뜨리지 않는다.
-- 로컬 OAuth2 인증은 hosted 또는 운영 Supabase를 사용하지 않고 `supabase start`로 실행한 로컬 Supabase Auth를 사용한다. 운영 Auth JWT를 로컬 DB와 연결하지 않는다.
-- 로컬 `AUTH_ISSUER_URI`와 `AUTH_JWKS_URI`는 `supabase status`의 API URL에서 구성한다. `AUTH_ISSUER_URI`는 API URL 뒤에 `/auth/v1`, `AUTH_JWKS_URI`는 그 뒤에 `/.well-known/jwks.json`을 붙인다.
-- 로컬 Auth에서 JWKS 검증을 사용할 때는 비대칭 signing key를 사용한다. signing key private 파일과 Google/Kakao OAuth secret은 `config.toml`에 직접 기록하지 않고 `env()` 또는 실행 환경에서 주입하며 Git에 커밋하지 않는다.
-- Manta는 Google·Kakao 등 OAuth provider 로그인만 사용하며 Supabase Auth Confirm Email은 사용하지 않는다. Kakao는 provider 설정에서 이메일 제공을 필수로 하고, Spring은 JWT의 `sub`와 비어 있지 않은 `email`만 확인한다. Custom Access Token Hook과 `email_verified` claim은 추가하지 않는다.
+- Supabase는 PostgreSQL 제공자로만 사용하며, local과 production 모두 Supabase Auth·Supabase JWT·Supabase session에 의존하지 않는다. `supabase start`는 로컬 PostgreSQL 검증 용도만으로 사용한다.
+- Manta는 Google·Kakao OAuth2 confidential client다. OAuth 시작과 callback은 Manta가 수신하고, provider의 redirect URI와 프론트 callback URI는 환경별 고정 allowlist로 관리한다. 임의 `returnTo` query parameter를 redirect 대상에 사용하지 않는다.
+- OAuth 요청마다 예측 불가능한 `state`를 생성해 사용자 에이전트와 짧은 만료 시간으로 결속하고 callback에서 1회 검증한다. provider가 지원하면 PKCE `S256`도 함께 사용한다. provider access token은 프로필 확인 직후 폐기하며 기능 요구가 없는 한 저장하지 않는다.
+- Spring OAuth2 Client와 Resource Server는 역할을 구분한다. provider authorization code 교환·프로필 조회는 `member/adapter`와 `common/config`의 공통 `RestClient`를 사용하고, Manta 자체 JWT의 issuer·audience·서명 검증은 Resource Server로 수행한다. 프레임워크 관리 `oauth2Login()`·`ClientRegistration`이 실제 요구사항이 아닐 때는 라이브러리를 목적 없이 추가하지 않는다.
+- Manta Access Token은 자체 서명 JWT이며 유효시간은 30분이다. `sub`는 Manta `member.id` 문자열로 두고, 사용자 수정 가능 정보와 관리자 권한을 claim에 넣지 않는다. JWT 검증은 Manta가 소유한 issuer·audience·서명 키 기준으로 수행한다.
+- Refresh Token 원문은 `HttpOnly`·`Secure` cookie로만 전달하고 Manta DB에는 해시·family·만료·폐기 상태만 저장한다. `/api/v1/auth/refresh`는 rotation을 수행하고, 회전된 token 재사용이 확인되면 해당 family를 폐기한다. 이는 Spring HTTP Session이 아니므로 Security는 `STATELESS`를 유지한다.
+- 현재 프론트와 API는 같은 Lightsail에서 같은 사이트로 배포한다. 향후 origin을 분리할 때는 환경별 허용 origin, credential CORS, cookie `SameSite` 정책, OAuth redirect URI를 함께 전환한다. credential CORS에는 wildcard origin을 사용하지 않는다.
+- Google/Kakao OAuth secret과 JWT 서명 private key는 `config.toml`, 프론트엔드, 로그, Git에 기록하지 않고 실행 환경 또는 승인된 secret manager로 주입한다.
 - 운영 Dashboard나 운영 SQL Editor에 자동으로 접속·변경하지 않는다. 운영 schema 변경은 검토 가능한 versioned Flyway migration으로 관리한다.
 - 비밀번호, access key, OAuth secret, private key를 프론트엔드·로그·Git에 넣지 않는다. 실제 값은 실행 환경 또는 승인된 secret manager에서 주입한다.
-- JWT의 사용자 수정 가능 metadata를 관리자 권한의 근거로 사용하지 않는다. Spring Resource Server가 issuer, JWKS, 서명, 만료를 검증하고 로컬 회원 권한을 확인한다. 이메일은 OAuth provider가 제공한 비공개·읽기 전용 값이며, provider의 별도 이메일 검증 claim을 Manta의 인증 조건으로 사용하지 않는다. 현재 활성 provider는 Supabase 설정에서 관리하며, Naver 같은 provider 추가 시 백엔드 provider별 코드를 추가하지 않는다.
+- 관리자 권한은 JWT claim이 아니라 Manta DB에서 확인한다. 이메일은 OAuth provider가 제공한 읽기 전용 값이며 provider adapter가 검증된 이메일을 확인한다. provider 추가는 provider별 OAuth adapter와 실행 환경 설정을 함께 추가하는 작업이다.
 
 ## 코드와 API 규칙
 
-- Controller는 입력 validation, 인증 주체, 응답 매핑만 담당한다. 성공 응답은 `ResponseEntity<ApiResponse<T>>` 형태로 반환하며 `ApiResponse<T>`는 HTTP 상태·헤더를 알지 않는 데이터 envelope로 유지한다. 도메인 규칙과 QueryDSL 조회는 Service/Repository에 둔다.
+- Controller는 입력 validation, 인증 주체, 응답 매핑만 담당한다. JSON body를 반환하는 성공 응답은 `ResponseEntity<ApiResponse<T>>` 형태로 반환하며 `ApiResponse<T>`는 HTTP 상태·헤더를 알지 않는 데이터 envelope로 유지한다. OAuth redirect와 `204 No Content`처럼 body가 없는 계약은 envelope를 생략한다. 도메인 규칙과 QueryDSL 조회는 Service/Repository에 둔다.
 - 공개 조회, 회원 API, 관리자 API의 인증·인가 경계를 명시하고 테스트한다.
 - 단건은 `ApiResponse<T>`, 목록은 `SliceResponse<T>` 또는 `PageResponse<T>` 계약을 따른다.
 - 오류 응답은 `code`, `traceId`, `fieldErrors`를 안정된 계약으로 유지한다.
@@ -154,7 +163,7 @@
 - 구현 계획이나 TDD 절차를 이유로 위 범위를 벗어난 테스트를 추가하지 않는다. 새 테스트를 만들기 전 단위(Service·도메인 규칙·Query) 또는 통합(인증·Controller·DB·실제 API) 범위를 먼저 명시한다.
 - DTO·record의 accessor와 정적 팩토리, `ApiResponse`·`PageResponse`·`SliceResponse`의 단순 직렬화, `List.copyOf`, ErrorCode enum, common filter/config, GlobalExceptionHandler 단독 동작은 별도 단위 테스트를 만들지 않는다. 실제 Controller 통합 테스트의 응답·오류 계약으로 검증한다.
 - OAuth2 인증 기반을 기능 모듈보다 먼저 구현하고, 인증 통합 테스트가 통과한 뒤 회원·콘텐츠 기능을 추가한다.
-- 실제 Supabase JWKS 자동 통합 테스트는 기본 테스트에 포함하지 않는다. 일반 통합 테스트는 테스트용 JwtDecoder로 인증 흐름을 검증하고, 인증 설정 변경이나 운영 전환 시에만 로컬 Supabase 토큰으로 수동 smoke 검증한다.
+- 실제 Google/Kakao OAuth 자동 통합 테스트는 기본 테스트에 포함하지 않는다. 일반 통합 테스트는 provider adapter를 제어한 상태로 callback·JWT·Refresh Token·DB 응답을 검증하고, 인증 설정 변경이나 운영 전환 시에만 실제 provider 계정으로 수동 smoke 검증한다.
 - 통합 테스트가 통과해야 REST Docs snippet과 OpenAPI 문서를 갱신할 수 있다. 문서 생성 실패를 테스트 성공으로 취급하지 않는다.
 
 ## 검증
