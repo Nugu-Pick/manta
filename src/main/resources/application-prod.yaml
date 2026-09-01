@@ -26,19 +26,3 @@ spring:
     properties:
       hibernate:
         default_schema: orca
-
-manta:
-  auth:
-    issuer: ${AUTH_JWT_ISSUER}
-    audience: ${AUTH_JWT_AUDIENCE}
-    jwt-secret: ${AUTH_JWT_SECRET}
-    frontend-callback-uri: ${AUTH_FRONTEND_CALLBACK_URI}
-  oauth:
-    google:
-      client-id: ${GOOGLE_OAUTH_CLIENT_ID}
-      client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
-      redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI}
-    kakao:
-      client-id: ${KAKAO_OAUTH_CLIENT_ID}
-      client-secret: ${KAKAO_OAUTH_CLIENT_SECRET}
-      redirect-uri: ${KAKAO_OAUTH_REDIRECT_URI}

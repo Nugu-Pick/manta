@@ -50,9 +50,9 @@
 
 ## DTO·Entity·레이어 책임
 
-- API 요청·응답 DTO는 Java `record`로 통일한다. DTO는 transport 데이터와 validation 선언만 담당하며 Entity, QueryDSL, HTTP 응답 생성 로직을 포함하지 않는다.
+- JSON API 요청·응답 DTO는 Java `record`를 기본으로 사용한다. multipart/form-data·파일 업로드·복합 바인딩·상속 또는 외부 라이브러리 제약이 있는 경우 `class`를 허용한다. DTO는 transport 데이터와 validation 선언만 담당하며 Entity, QueryDSL, HTTP 응답 생성 로직을 포함하지 않는다.
 - HTTP DTO는 `<module>.web.dto.request`와 `<module>.web.dto.response`로 구분한다. 요청 DTO에는 입력 validation을, 응답 DTO에는 외부 응답 필드만 둔다. 현재 사용하지 않는 DTO를 미리 만들지 않는다.
-- Entity는 JPA·QueryDSL·명시된 외부 모듈에서 접근할 수 있도록 `public`으로 선언하고, 모든 모듈의 `<module>.entity`를 Named Interface로 공개한다. 이는 이 프로젝트에서 JPA 연관관계를 활용하기 위한 예외적인 공개이며, 다른 모듈은 Entity를 조회·연관관계 참조용으로만 사용한다. Entity 상태 변경 메서드 호출, 소유 모듈 Repository 직접 참조, cross-module cascade·orphanRemoval은 금지한다.
+- Entity는 JPA 요구사항과 실제 사용처에 맞는 visibility를 사용하며, JPA·QueryDSL·외부 모듈에서 접근할 필요가 있을 때만 `public`으로 선언한다. 다른 모듈이 Entity를 조회하거나 연관관계로 참조해야 하는 경우에만 소유 모듈의 `<module>.entity`를 Named Interface로 공개한다. 다른 모듈은 Entity 조회·연관관계 참조용으로만 사용하며, Entity 상태 변경 메서드 호출·소유 모듈 Repository 직접 참조·cross-module cascade·orphanRemoval은 금지한다.
 - Controller에서 Entity를 직접 반환하지 않으며, 다른 모듈의 상태 변경은 소유 모듈의 API·Service를 통해서만 수행한다.
 - Entity는 식별자·상태·도메인 불변식과 상태 전이 메서드를 소유한다. 무분별한 public setter, HTTP·provider·응답 포맷 의존을 만들지 않는다.
 - Controller는 입력 validation, 인증 주체 추출, Service 호출, DTO 매핑과 HTTP status만 담당한다.
@@ -71,19 +71,17 @@
 - 제품명 접두사를 클래스명에 반복하지 않는다. 패키지와 모듈이 책임을 표현하므로 `Manta`는 애플리케이션 진입점처럼 외부 식별이 필요한 경우에만 사용한다.
 - Lombok으로 생성자·getter·builder 등 반복 보일러플레이트를 줄인다. 다만 Entity에는 `@Data`와 무분별한 `@Setter`를 사용하지 않고, 필요한 접근자와 상태 전이 메서드만 공개한다.
 - Lombok annotation processor는 이미 활성화되어 있으므로 동일한 코드를 수동으로 반복하지 않는다. Lombok이 도메인 규칙을 숨기거나 Entity의 상태 변경 경계를 흐리면 명시적인 Java 코드를 우선한다.
-- 설정 클래스는 기본적으로 `@Configuration`을 사용한다. Bean 간 의존성은 `@Bean` 메서드 파라미터로 주입하고, Bean 메서드를 직접 호출해야 하는 설정에만 `proxyBeanMethods = true`를 명시한다.
+- 설정 클래스는 기본적으로 `@Configuration`을 사용한다. Bean 간 의존성은 `@Bean` 메서드 파라미터로 주입한다.
 
 ## 확정 기반 기술
 
-- 기준 패키지는 `com.chaean.manta`다. 문서 예시에도 `com.nugupick`을 사용하지 않는다.
+- 기준 패키지는 `com.chaean.manta`다.
 - Spring Modulith 의존성은 `spring-modulith-starter-jpa`를 사용한다. 이벤트 publication 테이블은 JPA 모듈의 공식 매핑을 확인한 뒤 해당 기능 구현 시 migration으로 추가한다.
 - Migration은 현재 구현하는 기능의 테이블만 포함한다. 미래 기능의 테이블(예: `legal_document`, `member_agreement`)을 선행 생성하지 않고 해당 기능 구현 시 별도 versioned migration으로 추가한다.
 - API의 전역 prefix는 `/api/v1`이다. API 문서 화면은 `/scalar`, OpenAPI 파일은 `/openapi3.yaml` 경로를 사용하며 API prefix와 분리한다.
 - API 문서는 Spring REST Docs 테스트를 source of truth로 사용하고, `restdocs-api-spec` adapter로 OpenAPI를 생성하며, Scalar로 표시한다. API path에는 `/api/v1`을 유지하고 OpenAPI `servers` 값은 현재 호스트를 따르는 `/`로 두며 `localhost`를 운영 문서에 넣지 않는다. Springdoc annotation 기반 문서는 사용하지 않는다.
 - OpenAPI 산출물은 `build/api-spec`에 생성하고 Git에 커밋하지 않는다. CI/CD 구현 시 검증된 산출물을 Docker image에 포함해 Scalar가 읽도록 한다.
 - 실행 환경은 local과 production만 사용하며 `dev`는 배포 환경이 아닌 통합 브랜치다. local과 production 모두 Scalar를 사용할 수 있지만 production의 `/scalar`와 `/openapi3.yaml`은 Caddy Basic Auth로 보호한다. 문서 계정과 비밀번호 해시는 Lightsail runtime 환경 파일에 두고 Git과 image에 넣지 않는다.
-- `common.persistence.BaseEntity`, `common.persistence.BaseDeletedEntity`, `common.config.JpaAuditingConfig`, `common.config.JacksonConfig`, `common.serialization.InstantSerializer`, `common.config.QuerydslConfig`는 공통 기반으로 유지한다.
-- `BaseEntity`는 `createdAt`, `updatedAt`만 제공하고, `deleted_at`을 사용하는 Entity만 `BaseDeletedEntity`를 상속한다. `status`로 생명주기를 관리하는 Entity에 `deleted_at`을 강제로 추가하지 않는다.
 - 공통 기반에 `@SQLRestriction`이나 `@SoftDelete`를 적용하지 않는다. `BaseDeletedEntity`를 상속한 Entity는 `@SQLDelete`로 `deleted_at`을 기록하고, 관리자 운영 상태가 필요한 Entity는 별도의 `status`로 관리한다. 조회 조건은 Repository Query에서 목적에 맞게 명시한다.
 - 애플리케이션의 날짜·시각 값은 Java `Instant`로 통일한다. `LocalDateTime`, `OffsetDateTime`, `ZonedDateTime`을 Entity·DTO·Service의 시각 타입으로 사용하지 않는다.
 - JPA auditing 시각은 `common.config.JpaAuditingConfig`에서 `Instant`로 제공한다. 업무 기능에 전역 `Clock` Bean을 추가하지 않는다.
@@ -125,13 +123,15 @@
 
 - 인증, 데이터베이스, object storage, CDN, 지도 provider는 인프라 경계로 취급하고 도메인 코드에 provider 종속을 퍼뜨리지 않는다.
 - Supabase는 PostgreSQL 제공자로만 사용하며, local과 production 모두 Supabase Auth·Supabase JWT·Supabase session에 의존하지 않는다. `supabase start`는 로컬 PostgreSQL 검증 용도만으로 사용한다.
-- Manta는 Google·Kakao OAuth2 confidential client다. OAuth 시작과 callback은 Manta가 수신하고, provider의 redirect URI와 프론트 callback URI는 환경별 고정 allowlist로 관리한다. 임의 `returnTo` query parameter를 redirect 대상에 사용하지 않는다.
-- OAuth 요청마다 예측 불가능한 `state`를 생성해 사용자 에이전트와 짧은 만료 시간으로 결속하고 callback에서 1회 검증한다. provider가 지원하면 PKCE `S256`도 함께 사용한다. provider access token은 프로필 확인 직후 폐기하며 기능 요구가 없는 한 저장하지 않는다.
-- Spring OAuth2 Client와 Resource Server는 역할을 구분한다. provider authorization code 교환·프로필 조회는 `member/adapter`와 `common/config`의 공통 `RestClient`를 사용하고, Manta 자체 JWT의 issuer·audience·서명 검증은 Resource Server로 수행한다. 프레임워크 관리 `oauth2Login()`·`ClientRegistration`이 실제 요구사항이 아닐 때는 라이브러리를 목적 없이 추가하지 않는다.
+- Manta는 Google·Kakao·Naver OAuth2 confidential client다. OAuth 시작과 callback은 Manta가 수신하고, provider의 redirect URI와 프론트 callback URI는 환경별 고정 allowlist로 관리한다. 임의 `returnTo` query parameter를 redirect 대상에 사용하지 않는다.
+- OAuth 요청마다 예측 불가능한 `state`를 생성해 사용자 에이전트와 짧은 만료 시간으로 결속하고 callback에서 1회 검증한다. provider가 지원하면 PKCE `S256`도 함께 사용한다. provider access token은 callback 처리 중 OAuth 전용 HTTP Session에만 잠시 두고 성공·실패 처리 후 session을 폐기하며, DB·cookie·로그에는 저장하지 않는다.
+- Spring OAuth2 Client와 Resource Server는 역할을 구분한다. 현재 웹의 provider authorization code 교환·프로필 조회는 `spring-boot-starter-oauth2-client`의 `oauth2Login()`·`ClientRegistration`을 사용하고, Manta 자체 JWT의 issuer·audience·서명 검증은 Resource Server로 수행한다. OAuth 전용 SecurityFilterChain은 `SessionCreationPolicy.IF_REQUIRED`와 기본 `HttpSessionOAuth2AuthorizationRequestRepository`·`HttpSessionOAuth2AuthorizedClientRepository`를 사용하고 callback 후 session을 폐기한다. 일반 API SecurityFilterChain은 Manta JWT 검증과 `SessionCreationPolicy.STATELESS`를 사용한다.
+- 현재 동일 사이트 단일 인스턴스 웹 범위에서는 OAuth HTTP Session을 위해 Redis 등 외부 session store를 추가하지 않는다. 다중 인스턴스나 무상태 OAuth handoff가 필요해질 때 별도로 검토한다.
+- 현재 OAuth 구현 범위는 같은 사이트에 배포하는 웹이다. 앱 형태가 정해지기 전에는 `platform`, Deep Link, one-time handoff code, exchange API, provider SDK credential 검증 API를 추가하지 않는다. 앱 확장 시 provider identity 검증 결과를 공통 회원·가입 application 흐름에 전달하고 결과 전달 adapter만 클라이언트 환경에 맞게 분리한다.
 - Manta Access Token은 자체 서명 JWT이며 유효시간은 30분이다. `sub`는 Manta `member.id` 문자열로 두고, 사용자 수정 가능 정보와 관리자 권한을 claim에 넣지 않는다. JWT 검증은 Manta가 소유한 issuer·audience·서명 키 기준으로 수행한다.
-- Refresh Token 원문은 `HttpOnly`·`Secure` cookie로만 전달하고 Manta DB에는 해시·family·만료·폐기 상태만 저장한다. `/api/v1/auth/refresh`는 rotation을 수행하고, 회전된 token 재사용이 확인되면 해당 family를 폐기한다. 이는 Spring HTTP Session이 아니므로 Security는 `STATELESS`를 유지한다.
+- 현재 웹 채널에서는 Refresh Token 원문을 `HttpOnly`·`Secure` cookie로 전달하고 Manta DB에는 해시·family·만료·폐기 상태만 저장한다. `/api/v1/auth/refresh`는 rotation을 수행하고, 회전된 token 재사용이 확인되면 해당 family를 폐기한다. 앱 채널이 추가되면 cookie-only 규칙을 그대로 적용하지 않고 OS secure storage 등 채널에 맞는 안전한 전달 방식을 별도로 결정한다. OAuth callback용 HTTP Session과 Manta Refresh Token 상태는 별개이며, 일반 API SecurityFilterChain은 `STATELESS`를 유지한다.
 - 현재 프론트와 API는 같은 Lightsail에서 같은 사이트로 배포한다. 향후 origin을 분리할 때는 환경별 허용 origin, credential CORS, cookie `SameSite` 정책, OAuth redirect URI를 함께 전환한다. credential CORS에는 wildcard origin을 사용하지 않는다.
-- Google/Kakao OAuth secret과 JWT 서명 private key는 `config.toml`, 프론트엔드, 로그, Git에 기록하지 않고 실행 환경 또는 승인된 secret manager로 주입한다.
+- Google/Kakao/Naver OAuth secret과 JWT 서명 private key는 `config.toml`, 프론트엔드, 로그, Git에 기록하지 않고 실행 환경 또는 승인된 secret manager로 주입한다.
 - 운영 Dashboard나 운영 SQL Editor에 자동으로 접속·변경하지 않는다. 운영 schema 변경은 검토 가능한 versioned Flyway migration으로 관리한다.
 - 비밀번호, access key, OAuth secret, private key를 프론트엔드·로그·Git에 넣지 않는다. 실제 값은 실행 환경 또는 승인된 secret manager에서 주입한다.
 - 관리자 권한은 JWT claim이 아니라 Manta DB에서 확인한다. 이메일은 OAuth provider가 제공한 읽기 전용 값이며 provider adapter가 검증된 이메일을 확인한다. provider 추가는 provider별 OAuth adapter와 실행 환경 설정을 함께 추가하는 작업이다.
@@ -156,14 +156,14 @@
 - `dev` 대상 PR과 `dev → main` Release PR의 Controller 통합 테스트에서 REST Docs snippet과 OpenAPI 파일을 생성한다. 생성된 파일은 검증 후 배포 산출물로만 사용한다.
 - 테스트는 `given`, `when`, `then` 단계가 드러나는 구조로 작성한다.
 - 테스트 메서드에는 `@DisplayName`을 사용하고, 테스트 설명은 한글로 작성한다.
-- 단위 테스트의 범위는 Service, 도메인 규칙, Query 로직으로 한정한다. 외부 HTTP와 실제 DB 연결에 의존하지 않는다.
+- 단위 테스트는 유스케이스 Service와 핵심 도메인 규칙을 우선 대상으로 하며, 외부 HTTP와 실제 DB 연결에 의존하지 않는다. Query 로직은 복잡한 조회 조합처럼 별도 검증 가치가 있을 때만 추가한다.
 - 통합 테스트의 범위는 인증·인가, Controller, PostgreSQL/Testcontainers DB, 실제 API 요청·응답 검증으로 한정한다.
-- 테스트 종류는 단위 테스트와 통합 테스트만 사용한다. 별도의 보안 변환기·설정·Modulith 구조·단순 enum 매핑 테스트를 추가하지 않으며, 해당 동작은 필요한 통합 테스트에서 검증한다.
-- 하나의 동작을 단위 테스트·보안 테스트·Controller 테스트로 중복 검증하지 않는다. 같은 통합 경로에서 인증·인가·DB·실제 응답을 함께 확인하고, 테스트 클래스와 시나리오는 최소한으로 유지한다.
-- 구현 계획이나 TDD 절차를 이유로 위 범위를 벗어난 테스트를 추가하지 않는다. 새 테스트를 만들기 전 단위(Service·도메인 규칙·Query) 또는 통합(인증·Controller·DB·실제 API) 범위를 먼저 명시한다.
+- 테스트 종류는 단위 테스트와 통합 테스트만 사용한다. 기본 구성은 유스케이스 Service 단위 테스트와 핵심 Controller 통합 테스트 각 1개 흐름으로 하며, 별도의 보안 변환기·설정·Modulith 구조·단순 enum 매핑 테스트는 만들지 않는다.
+- 하나의 동작을 단위 테스트·보안 테스트·Controller 테스트로 중복 검증하지 않는다. Controller 통합 테스트 하나에서 인증·인가·DB·실제 응답·REST Docs를 함께 확인하고, 핵심 실패 경로가 통합 흐름으로 검증되지 않을 때만 최소 시나리오를 추가한다.
+- 구현 계획이나 TDD 절차를 이유로 위 범위를 벗어난 테스트를 추가하지 않는다. 새 테스트를 만들기 전 Service 단위 테스트 또는 Controller 통합 테스트로 검증 가능한지 먼저 확인하고, 배포시간에 영향을 주는 통합 테스트 context 수를 불필요하게 늘리지 않는다.
 - DTO·record의 accessor와 정적 팩토리, `ApiResponse`·`PageResponse`·`SliceResponse`의 단순 직렬화, `List.copyOf`, ErrorCode enum, common filter/config, GlobalExceptionHandler 단독 동작은 별도 단위 테스트를 만들지 않는다. 실제 Controller 통합 테스트의 응답·오류 계약으로 검증한다.
 - OAuth2 인증 기반을 기능 모듈보다 먼저 구현하고, 인증 통합 테스트가 통과한 뒤 회원·콘텐츠 기능을 추가한다.
-- 실제 Google/Kakao OAuth 자동 통합 테스트는 기본 테스트에 포함하지 않는다. 일반 통합 테스트는 provider adapter를 제어한 상태로 callback·JWT·Refresh Token·DB 응답을 검증하고, 인증 설정 변경이나 운영 전환 시에만 실제 provider 계정으로 수동 smoke 검증한다.
+- 실제 Google/Kakao/Naver OAuth 자동 통합 테스트는 기본 테스트에 포함하지 않는다. 일반 통합 테스트는 provider adapter를 제어한 상태로 callback·OAuth HTTP Session 저장·callback 후 session 폐기·JWT·Refresh Token·DB 응답을 검증하고, 인증 설정 변경이나 운영 전환 시에만 실제 provider 계정으로 수동 smoke 검증한다.
 - 통합 테스트가 통과해야 REST Docs snippet과 OpenAPI 문서를 갱신할 수 있다. 문서 생성 실패를 테스트 성공으로 취급하지 않는다.
 
 ## 검증

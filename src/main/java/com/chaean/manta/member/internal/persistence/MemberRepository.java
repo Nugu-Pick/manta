@@ -21,13 +21,4 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 	@Query("SELECT member FROM Member member WHERE member.id = :memberId AND member.deletedAt IS NULL")
 	Optional<Member> findByIdAndDeletedAtIsNullForUpdate(@Param("memberId") Long memberId);
 
-	@Lock(LockModeType.PESSIMISTIC_WRITE)
-	@Query("SELECT member FROM Member member "
-		+ "WHERE LOWER(member.email) = LOWER(:email) AND member.deletedAt IS NULL ORDER BY member.id")
-	Optional<Member> findFirstByEmailAndDeletedAtIsNullOrderByIdAsc(@Param("email") String email);
-
-	@Query(value = "WITH advisory_lock AS ("
-		+ "SELECT pg_advisory_xact_lock(hashtextextended(CAST(:email AS text), 0))) "
-		+ "SELECT 1 FROM advisory_lock", nativeQuery = true)
-	Integer lockEmail(@Param("email") String email);
 }

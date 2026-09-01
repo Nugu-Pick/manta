@@ -11,14 +11,14 @@ import java.util.Optional;
 import com.chaean.manta.common.web.error.BusinessException;
 import com.chaean.manta.common.web.error.ErrorCode;
 import com.chaean.manta.member.api.event.MemberRegisteredEvent;
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.fixture.MemberFixture;
 import com.chaean.manta.member.internal.application.model.MemberProfileUpdate;
 import com.chaean.manta.member.internal.persistence.MemberRepository;
 import com.chaean.manta.member.internal.persistence.MemberIdentityRepository;
 import com.chaean.manta.member.internal.persistence.RefreshTokenRepository;
-import com.chaean.manta.member.internal.persistence.LegalDocumentRepository;
-import com.chaean.manta.member.internal.persistence.MemberAgreementRepository;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,15 +41,6 @@ class MemberCommandServiceTest {
 	private RefreshTokenRepository refreshTokenRepository;
 
 	@Mock
-	private LegalDocumentRepository legalDocumentRepository;
-
-	@Mock
-	private MemberAgreementRepository memberAgreementRepository;
-
-	@Mock
-	private LegalDocumentQueryService legalDocumentQueryService;
-
-	@Mock
 	private org.springframework.context.ApplicationEventPublisher eventPublisher;
 
 	@Captor
@@ -59,8 +50,8 @@ class MemberCommandServiceTest {
 	private ArgumentCaptor<MemberRegisteredEvent> eventCaptor;
 
 	@Test
-	@DisplayName("이메일로 새 회원을 온보딩 상태로 생성한다")
-	void createsNewMemberInOnboardingStatus() {
+	@DisplayName("이메일로 새 회원을 활성 상태로 생성한다")
+	void createsNewMemberInActiveStatus() {
 		// given
 		when(memberRepository.existsByNicknameAndDeletedAtIsNull(any())).thenReturn(false);
 		when(memberRepository.save(any(Member.class))).thenReturn(
@@ -68,12 +59,12 @@ class MemberCommandServiceTest {
 		MemberCommandService service = service();
 
 		// when
-		service.register("user@example.com");
+		service.registerSignupMember("user@example.com", null, null);
 
 		// then
 		verify(memberRepository).save(memberCaptor.capture());
 		assertThat(memberCaptor.getValue().getEmail()).isEqualTo("user@example.com");
-		assertThat(memberCaptor.getValue().getStatus()).isEqualTo(com.chaean.manta.member.entity.MemberStatus.ONBOARDING);
+		assertThat(memberCaptor.getValue().getStatus()).isEqualTo(com.chaean.manta.member.entity.MemberStatus.ACTIVE);
 		assertThat(memberCaptor.getValue().getNickname()).matches("누구픽_[0-9a-f]{8}");
 		verify(eventPublisher).publishEvent(eventCaptor.capture());
 		assertThat(eventCaptor.getValue().memberId()).isEqualTo(43L);
@@ -86,7 +77,7 @@ class MemberCommandServiceTest {
 		MemberCommandService service = service();
 
 		// when & then
-		assertThatThrownBy(() -> service.register(""))
+		assertThatThrownBy(() -> service.registerSignupMember("", null, null))
 			.isInstanceOfSatisfying(BusinessException.class,
 				exception -> assertThat(exception.errorCode()).isSameAs(ErrorCode.EMAIL_REQUIRED));
 	}
@@ -106,8 +97,8 @@ class MemberCommandServiceTest {
 
 		// then
 		assertThat(member.getNickname()).isEqualTo("새 닉네임");
-		assertThat(member.getGender()).isEqualTo("FEMALE");
-		assertThat(member.getAgeGroup()).isEqualTo("TWENTIES");
+		assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
+		assertThat(member.getAgeGroup()).isEqualTo(AgeGroup.TWENTIES);
 		assertThat(member.getDescription()).isEqualTo("소개입니다.");
 		assertThat(member.getAvatarAssetId()).isEqualTo(99L);
 	}
@@ -144,8 +135,7 @@ class MemberCommandServiceTest {
 	}
 
 	private MemberCommandService service() {
-		return new MemberCommandService(memberRepository, memberIdentityRepository, refreshTokenRepository,
-			legalDocumentRepository, memberAgreementRepository, legalDocumentQueryService, eventPublisher);
+		return new MemberCommandService(memberRepository, memberIdentityRepository, refreshTokenRepository, eventPublisher);
 	}
 
 }

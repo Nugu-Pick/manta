@@ -8,7 +8,8 @@ import com.chaean.manta.common.web.error.ErrorCode;
 public enum OAuthProvider {
 
 	GOOGLE,
-	KAKAO;
+	KAKAO,
+	NAVER;
 
 	public static OAuthProvider from(String value) {
 		try {

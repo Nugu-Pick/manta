@@ -6,25 +6,11 @@ ALTER TABLE orca.member
     ADD COLUMN last_login_at TIMESTAMP WITH TIME ZONE;
 
 ALTER TABLE orca.member
-    ADD CONSTRAINT ck_member_status CHECK (status IN ('ONBOARDING', 'ACTIVE', 'WITHDRAWN'));
-
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT LOWER(email)
-        FROM orca.member
-        WHERE deleted_at IS NULL
-          AND email IS NOT NULL
-        GROUP BY LOWER(email)
-        HAVING COUNT(*) > 1
-    ) THEN
-        RAISE EXCEPTION 'active member emails must be unique after lowercase normalization';
-    END IF;
-END $$;
-
-CREATE UNIQUE INDEX uq_member_active_email
-    ON orca.member (LOWER(email))
-    WHERE deleted_at IS NULL AND email IS NOT NULL;
+    ADD CONSTRAINT ck_member_status CHECK (status IN ('ACTIVE', 'WITHDRAWN')),
+    ADD CONSTRAINT ck_member_gender CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE')),
+    ADD CONSTRAINT ck_member_age_group CHECK (age_group IS NULL OR age_group IN (
+        'TEENS', 'TWENTIES', 'THIRTIES', 'FORTIES', 'FIFTIES', 'SIXTIES_OR_OLDER'
+    ));
 
 CREATE TABLE orca.member_identity
 (

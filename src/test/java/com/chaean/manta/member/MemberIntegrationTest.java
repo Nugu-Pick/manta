@@ -216,6 +216,25 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("프로필의 성별과 연령대는 정해진 값만 허용한다")
+	void rejectsInvalidProfileValues() throws Exception {
+		// given
+		String token = Long.toString(insertActiveMember("invalid-profile@example.com"));
+
+		// when & then
+		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"gender\":\"OTHER\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("M117"));
+		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("{\"ageGroup\":\"SEVENTIES\"}"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("M118"));
+	}
+
+	@Test
 	@DisplayName("공개 회원 프로필은 인증 없이 조회할 수 있다")
 	void getsPublicProfileWithoutAuthentication() throws Exception {
 		// given

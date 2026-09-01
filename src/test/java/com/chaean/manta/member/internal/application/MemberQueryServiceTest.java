@@ -5,6 +5,8 @@ import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberRole;
 import com.chaean.manta.member.fixture.MemberFixture;
@@ -61,7 +63,7 @@ class MemberQueryServiceTest {
 	void returnsPublicProfile() {
 		// given
 		Member member = MemberFixture.createActive(42L, "user@example.com", "누구픽_abc12345");
-		member.updateProfile("누구픽_abc12345", "FEMALE", "TWENTIES", "소개", 99L);
+		member.updateProfile("누구픽_abc12345", Gender.FEMALE, AgeGroup.TWENTIES, "소개", 99L);
 		when(memberRepository.findByIdAndDeletedAtIsNull(42L)).thenReturn(Optional.of(member));
 		MemberQueryService service = new MemberQueryService(memberRepository);
 
