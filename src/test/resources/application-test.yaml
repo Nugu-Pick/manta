@@ -22,8 +22,28 @@ manta:
     jwt-secret: test-only-secret-value-with-at-least-32-bytes
     access-token-ttl: PT30M
     refresh-token-ttl: P30D
-    refresh-cookie-name: manta_test_refresh_token
-    oauth-state-cookie-name: manta_test_oauth_state
-    oauth-verifier-cookie-name: manta_test_oauth_verifier
-    frontend-callback-uri: http://localhost:3000/auth/callback
-    oauth-authorization-ttl: PT10M
+    frontend-login-callback-uri: http://localhost:3000/auth/callback
+    frontend-signup-callback-uri: http://localhost:3000/signup/terms
+    frontend-error-callback-uri: http://localhost:3000/auth/error
+  oauth:
+    google:
+      client-id: test-google-client
+      client-secret: test-google-secret
+      authorization-uri: http://localhost/google/authorize
+      token-uri: http://localhost/google/token
+      user-info-uri: http://localhost/google/profile
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/google/callback
+    kakao:
+      client-id: test-kakao-client
+      client-secret: test-kakao-secret
+      authorization-uri: http://localhost/kakao/authorize
+      token-uri: http://localhost/kakao/token
+      user-info-uri: http://localhost/kakao/profile
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/kakao/callback
+    naver:
+      client-id: test-naver-client
+      client-secret: test-naver-secret
+      authorization-uri: http://localhost/naver/authorize
+      token-uri: http://localhost/naver/token
+      user-info-uri: http://localhost/naver/profile
+      redirect-uri: http://localhost:8080/api/v1/auth/oauth/naver/callback

@@ -32,15 +32,17 @@ public enum ErrorCode implements ApiErrorCode {
 		HttpStatus.BAD_REQUEST),
 	AUTH_PROFILE_INVALID("M111", "Invalid OAuth profile", "OAuth provider 회원 정보를 확인할 수 없습니다.",
 		HttpStatus.BAD_GATEWAY),
+	AUTH_SIGNUP_CONTEXT_INVALID("M112", "Invalid signup context", "가입 인증 정보가 유효하지 않거나 만료되었습니다.",
+		HttpStatus.BAD_REQUEST),
 	REFRESH_TOKEN_INVALID("M113", "Invalid refresh token",
 		"Refresh Token이 유효하지 않거나 만료되었습니다.",
 		HttpStatus.UNAUTHORIZED),
-	ONBOARDING_REQUIRED_AGREEMENT_MISSING("M114", "Onboarding agreement missing",
-		"온보딩을 완료하려면 필수 약관에 동의해야 합니다.", HttpStatus.FORBIDDEN),
-	ONBOARDING_ALREADY_COMPLETED("M115", "Onboarding already completed", "이미 온보딩을 완료한 회원입니다.",
-		HttpStatus.CONFLICT),
+	SIGNUP_REQUIRED_AGREEMENT_MISSING("M114", "Signup agreement missing", "가입을 완료하려면 필수 약관에 동의해야 합니다.",
+		HttpStatus.FORBIDDEN),
 	MEMBER_STATUS_NOT_ACTIVE("M116", "Member is not active", "활성화된 회원만 이용할 수 있습니다.",
-		HttpStatus.FORBIDDEN);
+		HttpStatus.FORBIDDEN),
+	SIGNUP_GENDER_INVALID("M117", "Invalid signup gender", "성별 값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
+	SIGNUP_AGE_GROUP_INVALID("M118", "Invalid signup age group", "연령대 값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
 
 	private final String code;
 	private final String title;

@@ -21,8 +21,8 @@ class MemberTest {
 
 		// then
 		assertThat(member.getNickname()).isEqualTo("새 닉네임");
-		assertThat(member.getGender()).isEqualTo("FEMALE");
-		assertThat(member.getAgeGroup()).isEqualTo("TWENTIES");
+		assertThat(member.getGender()).isEqualTo(Gender.FEMALE);
+		assertThat(member.getAgeGroup()).isEqualTo(AgeGroup.TWENTIES);
 		assertThat(member.getDescription()).isEqualTo("기존 설명");
 		assertThat(member.getAvatarAssetId()).isEqualTo(99L);
 	}

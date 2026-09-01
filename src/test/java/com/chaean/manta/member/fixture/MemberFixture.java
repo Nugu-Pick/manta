@@ -1,5 +1,7 @@
 package com.chaean.manta.member.fixture;
 
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberStatus;
 
@@ -11,7 +13,7 @@ public final class MemberFixture {
 	}
 
 	public static Member create(long id, String email, String nickname) {
-		Member member = Member.register(email, nickname);
+		Member member = Member.register(email, nickname, null, null);
 		ReflectionTestUtils.setField(member, "id", id);
 		return member;
 	}
@@ -25,7 +27,8 @@ public final class MemberFixture {
 	public static Member createWithProfile(long id, String email, String nickname,
 		String gender, String ageGroup, String description, Long avatarAssetId) {
 		Member member = create(id, email, nickname);
-		member.updateProfile(nickname, gender, ageGroup, description, avatarAssetId);
+		member.updateProfile(nickname, Gender.fromNullable(gender), AgeGroup.fromNullable(ageGroup), description,
+			avatarAssetId);
 		return member;
 	}
 }

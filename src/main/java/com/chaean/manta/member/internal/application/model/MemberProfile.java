@@ -7,7 +7,9 @@ public record MemberProfile(long id, String nickname, String email, String gende
                             Long avatarAssetId, MemberRole role) {
 
 	public static MemberProfile from(Member member) {
-		return new MemberProfile(member.getId(), member.getNickname(), member.getEmail(), member.getGender(),
-			member.getAgeGroup(), member.getDescription(), member.getAvatarAssetId(), member.getRole());
+		return new MemberProfile(member.getId(), member.getNickname(), member.getEmail(),
+			member.getGender() == null ? null : member.getGender().name(),
+			member.getAgeGroup() == null ? null : member.getAgeGroup().name(), member.getDescription(),
+			member.getAvatarAssetId(), member.getRole());
 	}
 }

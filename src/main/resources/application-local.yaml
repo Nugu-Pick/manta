@@ -26,9 +26,7 @@ spring:
     properties:
       hibernate:
         default_schema: orca
+
 logging:
   pattern:
     level: '%clr(traceId=%X{traceId:-}){yellow} %clr(%5p){cyan}'
-
-scalar:
-  enabled: true

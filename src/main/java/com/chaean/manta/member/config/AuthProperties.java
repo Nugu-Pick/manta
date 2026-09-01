@@ -11,9 +11,10 @@ public record AuthProperties(
 	String jwtSecret,
 	Duration accessTokenTtl,
 	Duration refreshTokenTtl,
-	String refreshCookieName,
-	String oauthStateCookieName,
-	String oauthVerifierCookieName,
-	String frontendCallbackUri,
-	Duration oauthAuthorizationTtl) {
+	String frontendLoginCallbackUri,
+	String frontendSignupCallbackUri,
+	String frontendErrorCallbackUri) {
+
+	public static final String REFRESH_COOKIE_NAME = "manta_refresh_token";
+	public static final String SIGNUP_CONTEXT_COOKIE_NAME = "manta_signup_context";
 }

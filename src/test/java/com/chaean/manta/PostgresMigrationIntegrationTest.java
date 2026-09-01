@@ -19,7 +19,7 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
 	private JdbcTemplate jdbcTemplate;
 
 	@Test
-	@DisplayName("Flyway migration이 Supabase 식별자와 OAuth transaction 없이 자체 인증 schema를 생성한다")
+	@DisplayName("Flyway migration이 자체 인증 가입 schema를 생성한다")
 	void flywayMigrationCreatesSelfManagedAuthSchema() {
 		Boolean orcaSchemaExists = jdbcTemplate.queryForObject(
 			"SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'orca')",
@@ -87,6 +87,21 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
 				+ "AND indexname = 'uq_member_active_email' AND LOWER(indexdef) LIKE '%lower(%email%'",
 			Integer.class
 		);
+		String memberStatusConstraint = jdbcTemplate.queryForObject(
+			"SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+				+ "WHERE conname = 'ck_member_status' AND conrelid = 'orca.member'::regclass",
+			String.class
+		);
+		String memberGenderConstraint = jdbcTemplate.queryForObject(
+			"SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+				+ "WHERE conname = 'ck_member_gender' AND conrelid = 'orca.member'::regclass",
+			String.class
+		);
+		String memberAgeGroupConstraint = jdbcTemplate.queryForObject(
+			"SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+				+ "WHERE conname = 'ck_member_age_group' AND conrelid = 'orca.member'::regclass",
+			String.class
+		);
 		Integer selfManagedForeignKeyCount = jdbcTemplate.queryForObject(
 			"SELECT COUNT(*) FROM pg_constraint c "
 				+ "JOIN pg_namespace n ON n.oid = c.connamespace "
@@ -137,8 +152,11 @@ class PostgresMigrationIntegrationTest extends PostgresIntegrationTest {
 		assertThat(supabaseSubjectColumnCount).isZero();
 		assertThat(memberStatusColumnCount).isEqualTo(3);
 		assertThat(refreshTokenUniqueIndexCount).isEqualTo(1);
-		assertThat(activeEmailUniqueIndexCount).isEqualTo(1);
-		assertThat(activeEmailLowerIndexCount).isEqualTo(1);
+		assertThat(activeEmailUniqueIndexCount).isZero();
+		assertThat(activeEmailLowerIndexCount).isZero();
+		assertThat(memberStatusConstraint).contains("ACTIVE", "WITHDRAWN").doesNotContain("ONBOARDING");
+		assertThat(memberGenderConstraint).contains("MALE", "FEMALE");
+		assertThat(memberAgeGroupConstraint).contains("TEENS", "SIXTIES_OR_OLDER");
 		assertThat(selfManagedForeignKeyCount).isZero();
 		assertThat(agreementForeignKeyCount).isZero();
 		assertThat(legalDocumentVersionColumnCount).isZero();

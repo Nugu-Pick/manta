@@ -47,11 +47,13 @@ public class Member extends BaseDeletedEntity {
 	@Column(length = 320)
 	private String email;
 
+	@Enumerated(EnumType.STRING)
 	@Column(length = 20)
-	private String gender;
+	private Gender gender;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "age_group", length = 20)
-	private String ageGroup;
+	private AgeGroup ageGroup;
 
 	@Column(columnDefinition = "TEXT")
 	private String description;
@@ -63,15 +65,17 @@ public class Member extends BaseDeletedEntity {
 	@Column(length = 20)
 	private MemberRole role;
 
-	private Member(String email, String nickname) {
+	private Member(String email, String nickname, Gender gender, AgeGroup ageGroup) {
 		this.email = email;
 		this.nickname = nickname;
-		this.status = MemberStatus.ONBOARDING;
+		this.gender = gender;
+		this.ageGroup = ageGroup;
+		this.status = MemberStatus.ACTIVE;
 		this.role = MemberRole.USER;
 	}
 
-	public static Member register(String email, String nickname) {
-		return new Member(email, nickname);
+	public static Member register(String email, String nickname, Gender gender, AgeGroup ageGroup) {
+		return new Member(email, nickname, gender, ageGroup);
 	}
 
 	public void recordLogin(String provider, Instant loggedInAt) {
@@ -79,17 +83,7 @@ public class Member extends BaseDeletedEntity {
 		this.lastLoginAt = loggedInAt;
 	}
 
-	public void completeOnboarding(String gender, String ageGroup) {
-		if (status != MemberStatus.ONBOARDING) {
-			throw new IllegalStateException("member is not onboarding");
-		}
-
-		this.gender = gender;
-		this.ageGroup = ageGroup;
-		this.status = MemberStatus.ACTIVE;
-	}
-
-	public void updateProfile(String nickname, String gender, String ageGroup, String description,
+	public void updateProfile(String nickname, Gender gender, AgeGroup ageGroup, String description,
 		Long avatarAssetId) {
 		if (nickname != null) {
 			this.nickname = nickname;
