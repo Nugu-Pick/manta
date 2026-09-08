@@ -1,0 +1,15 @@
+.git
+.github
+.gradle
+build/*
+!build/api-spec/
+!build/api-spec/openapi3.yaml
+docs
+data
+.idea
+.vscode
+.env
+.env.*
+!.env.example
+*.iml
+*.log
