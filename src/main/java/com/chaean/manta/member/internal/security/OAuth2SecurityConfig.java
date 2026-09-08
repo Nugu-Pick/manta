@@ -36,8 +36,9 @@ public class OAuth2SecurityConfig {
 	OAuth2SuccessHandler oauth2SuccessHandler(
 		OAuthCommandService oauthCommandService,
 		SignupContextCodec signupContextCodec,
-		AuthProperties properties) {
-		return new OAuth2SuccessHandler(oauthCommandService, signupContextCodec, properties);
+		AuthProperties properties,
+		OAuth2FailureHandler failureHandler) {
+		return new OAuth2SuccessHandler(oauthCommandService, signupContextCodec, properties, failureHandler);
 	}
 
 	@Bean

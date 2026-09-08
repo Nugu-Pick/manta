@@ -86,8 +86,8 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 
 		// when & then
 		mockMvc.perform(get("/api/v1/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isNotFound())
-			.andExpect(jsonPath("$.code").value("M101"));
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("M002"));
 	}
 
 	@Test

@@ -36,7 +36,7 @@ public class JwtConfig {
 	}
 
 	@Bean
-	@Profile("!test")
+	@Profile({"!test", "auth-real-jwt"})
 	@ConditionalOnMissingBean(JwtDecoder.class)
 	JwtDecoder jwtDecoder(AuthProperties properties) {
 		NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(secretKey(properties))

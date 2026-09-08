@@ -48,19 +48,20 @@ public class AuthTokenCommandService {
 	public AuthTokenPair issueAccessAndRefreshTokenPair(long memberId, Instant now) {
 		Member member = findMember(memberId);
 
-		return issueAccessAndRefreshTokenPair(member, now, UUID.randomUUID());
+		return issueAccessAndRefreshTokenPair(member, now, UUID.randomUUID(), null);
 	}
 
 	public AuthTokenPair rotateRefreshToken(String rawRefreshToken, Instant now) {
 		String tokenHash = hash(rawRefreshToken);
-		RefreshToken token = refreshTokenRepository.findByTokenHash(tokenHash)
+		UUID familyId = refreshTokenRepository.findFamilyIdByTokenHash(tokenHash)
 			.orElseThrow(() -> BusinessException.of(ErrorCode.REFRESH_TOKEN_INVALID));
 
 		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 		transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
 		RefreshTokenRotationResult result = transactionTemplate.execute(transactionStatus -> {
-			refreshTokenRepository.findFirstByFamilyIdOrderByIdAsc(token.getFamilyId())
+			// family의 첫 행을 공통 잠금 기준으로 사용해 로그아웃과 재발급을 직렬화한다.
+			refreshTokenRepository.findFirstByFamilyIdOrderByIdAsc(familyId)
 				.orElseThrow(() -> BusinessException.of(ErrorCode.REFRESH_TOKEN_INVALID));
 
 			RefreshToken current = refreshTokenRepository.findByTokenHashForUpdate(tokenHash)
@@ -73,15 +74,11 @@ public class AuthTokenCommandService {
 			}
 
 			Member member = findMember(current.getMemberId());
-			AuthTokenPair next = issueAccessAndRefreshTokenPair(member, now, current.getFamilyId());
-
-			RefreshToken nextRefreshToken = refreshTokenRepository.findByTokenHash(hash(next.refreshToken()))
-				.orElseThrow(() -> BusinessException.of(ErrorCode.REFRESH_TOKEN_INVALID));
-
-			current.replaceWith(nextRefreshToken.getId(), now);
+			AuthTokenPair next = issueAccessAndRefreshTokenPair(member, now, familyId, current);
 			return RefreshTokenRotationResult.success(next);
 		});
 
+		// 폐기 트랜잭션이 commit된 뒤 오류를 반환해야 재사용 탐지 결과가 보존된다.
 		if (result.reuseDetected()) {
 			throw BusinessException.of(ErrorCode.REFRESH_TOKEN_INVALID);
 		}
@@ -95,11 +92,15 @@ public class AuthTokenCommandService {
 			return;
 		}
 
-		refreshTokenRepository.findByTokenHash(hash(rawRefreshToken))
-			.ifPresent(token -> token.revoke(now));
+		// 잠금 전에 Entity를 적재하지 않아 잠금 대기 후 이전 상태를 재사용하지 않는다.
+		refreshTokenRepository.findFamilyIdByTokenHash(hash(rawRefreshToken)).ifPresent(familyId -> {
+			refreshTokenRepository.findFirstByFamilyIdOrderByIdAsc(familyId).ifPresent(first ->
+				refreshTokenRepository.findAllByFamilyId(familyId).forEach(token -> token.revoke(now)));
+		});
 	}
 
-	private AuthTokenPair issueAccessAndRefreshTokenPair(Member member, Instant now, UUID familyId) {
+	private AuthTokenPair issueAccessAndRefreshTokenPair(Member member, Instant now, UUID familyId,
+		RefreshToken previous) {
 		Instant accessTokenExpiresAt = now.plus(properties.accessTokenTtl());
 		Instant refreshTokenExpiresAt = now.plus(properties.refreshTokenTtl());
 		String rawRefreshToken = randomToken();
@@ -110,6 +111,9 @@ public class AuthTokenCommandService {
 
 		if (refreshToken.getId() == null) {
 			throw BusinessException.of(ErrorCode.INTERNAL_SERVER_ERROR);
+		}
+		if (previous != null) {
+			previous.replaceWith(refreshToken.getId(), now);
 		}
 
 		return AuthTokenPair.of(accessToken, accessTokenExpiresAt, rawRefreshToken, refreshTokenExpiresAt,

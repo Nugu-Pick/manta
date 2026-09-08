@@ -52,6 +52,7 @@ public class MemberQueryService implements MemberAuthorization {
 	@Transactional(readOnly = true)
 	public Optional<MemberRole> findRoleByMemberId(long memberId) {
 		return memberRepository.findByIdAndDeletedAtIsNull(memberId)
+			.filter(member -> member.getStatus() == MemberStatus.ACTIVE)
 			.map(Member::getRole);
 	}
 }
