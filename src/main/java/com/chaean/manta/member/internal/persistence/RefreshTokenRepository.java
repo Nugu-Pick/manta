@@ -15,6 +15,9 @@ import jakarta.persistence.LockModeType;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
 
+	@Query("SELECT token.familyId FROM RefreshToken token WHERE token.tokenHash = :tokenHash")
+	Optional<UUID> findFamilyIdByTokenHash(@Param("tokenHash") String tokenHash);
+
 	@Query("SELECT token FROM RefreshToken token WHERE token.tokenHash = :tokenHash")
 	Optional<RefreshToken> findByTokenHash(@Param("tokenHash") String tokenHash);
 

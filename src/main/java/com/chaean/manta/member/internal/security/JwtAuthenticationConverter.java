@@ -40,17 +40,19 @@ public final class JwtAuthenticationConverter
 		}
 
 		try {
-			return Long.parseLong(subject);
+			long memberId = Long.parseLong(subject);
+			if (memberId <= 0) {
+				throw new BadCredentialsException("JWT의 memberId가 올바르지 않습니다.");
+			}
+			return memberId;
 		} catch (NumberFormatException exception) {
 			throw new BadCredentialsException("JWT의 memberId가 올바르지 않습니다.", exception);
 		}
 	}
 
 	private Collection<? extends GrantedAuthority> authorities(long memberId) {
-		return memberAuthorization.findRoleByMemberId(memberId)
-			.map(MemberRole::authority)
-			.map(SimpleGrantedAuthority::new)
-			.<Collection<? extends GrantedAuthority>>map(List::of)
-			.orElseGet(List::of);
+		MemberRole role = memberAuthorization.findRoleByMemberId(memberId)
+			.orElseThrow(() -> new BadCredentialsException("인증 가능한 회원이 없습니다."));
+		return List.of(new SimpleGrantedAuthority(role.authority()));
 	}
 }

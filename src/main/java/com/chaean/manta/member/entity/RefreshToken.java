@@ -62,7 +62,9 @@ public class RefreshToken extends BaseEntity {
 	}
 
 	public void revoke(Instant revokedAt) {
-		this.revokedAt = revokedAt;
+		if (this.revokedAt == null) {
+			this.revokedAt = revokedAt;
+		}
 	}
 
 	public boolean isUsable(Instant now) {
