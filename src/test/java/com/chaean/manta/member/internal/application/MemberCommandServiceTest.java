@@ -92,7 +92,7 @@ class MemberCommandServiceTest {
 		MemberCommandService service = service();
 
 		// when
-		service.updateProfile(42L, MemberProfileUpdate.of("  새 닉네임  ", "FEMALE", "TWENTIES",
+		service.updateProfile(42L, MemberProfileUpdate.of("  새 닉네임  ", Gender.FEMALE, AgeGroup.TWENTIES,
 			"소개입니다.", 99L));
 
 		// then

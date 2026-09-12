@@ -229,6 +229,13 @@
 - OpenAPI `requestSchema`·`responseSchema` 이름은 Java DTO의 simple class name과 동일하게 지정한다. 예를 들어
   `MemberProfileUpdateRequest`와 `MemberMeResponse`는 `Schema.schema("MemberProfileUpdateRequest")`,
   `Schema.schema("MemberMeResponse")`를 사용하며, `api-v1-me-<hash>`처럼 경로와 hash로 생성되는 기본 이름은 사용하지 않는다.
+- JSON으로 주고받는 Java `Enum` 값은 DTO와 application command에서 Enum 타입으로 받고, REST Docs에서는
+  `restdocs-api-spec`의 `EnumFields`로 `type: string`과 허용값 `enum` 목록을 문서화한다. 응답·요청 body의 Enum 필드와
+  path·query·header의 Enum 입력은 실제 wire value와 일치하는 허용값을 문서에 포함한다.
+- Enum 역직렬화처럼 요청 값의 형식·허용값이 잘못된 경우에는 공통 `M001`과 해당 필드의 `fieldErrors`를 반환한다. 일반적인 Enum
+  값 오류마다 기능별 ErrorCode를 추가하지 않으며, 실제 도메인 상태 규칙 위반에만 별도 오류 코드를 사용한다.
+- OpenAPI 생성 후 문서의 Enum 필드에 `enum` 배열과 모든 허용값이 반영됐는지 확인한다. JSON wire 타입은 String이어도
+  문서에서 허용되는 Enum 값이 누락되면 문서 생성 성공으로 간주하지 않는다.
 - `dev` 대상 PR과 `dev → main` Release PR의 Controller 통합 테스트에서 REST Docs snippet과 OpenAPI 파일을 생성한다. 생성된 파일은 검증 후 배포 산출물로만
   사용한다.
 - 테스트는 `given`, `when`, `then` 단계가 드러나는 구조로 작성한다.
