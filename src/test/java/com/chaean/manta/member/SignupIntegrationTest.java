@@ -19,8 +19,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
+import com.chaean.manta.member.entity.MemberStatus;
 import com.chaean.manta.member.internal.application.SignupContextCodec;
 import com.chaean.manta.member.internal.application.model.OAuthProvider;
 import com.chaean.manta.member.internal.application.model.SignupContext;
@@ -98,15 +102,15 @@ class SignupIntegrationTest extends PostgresIntegrationTest {
 					fieldWithPath("legalDocumentIds").type(JsonFieldType.ARRAY)
 						.attributes(key("itemsType").value("number"))
 						.description("동의할 현재 약관 문서 ID 목록"),
-					fieldWithPath("gender").type(JsonFieldType.STRING).description("성별 또는 null").optional(),
-					fieldWithPath("ageGroup").type(JsonFieldType.STRING).description("연령대 또는 null").optional()
+					new EnumFields(Gender.class).withPath("gender").description("성별 또는 null").optional(),
+					new EnumFields(AgeGroup.class).withPath("ageGroup").description("연령대 또는 null").optional()
 				),
 				responseHeaders(headerWithName("Set-Cookie").description("Refresh Token 발급 및 signup context 삭제")),
 				responseFields(
 					fieldWithPath("data.accessToken").type(JsonFieldType.STRING).description("Manta Access Token"),
 					fieldWithPath("data.tokenType").type(JsonFieldType.STRING).description("토큰 타입"),
 					fieldWithPath("data.expiresAt").type(JsonFieldType.STRING).description("Access Token 만료 시각"),
-					fieldWithPath("data.memberStatus").type(JsonFieldType.STRING).description("회원 상태")
+					new EnumFields(MemberStatus.class).withPath("data.memberStatus").description("회원 상태")
 				)
 			))
 			.andReturn();
@@ -140,7 +144,7 @@ class SignupIntegrationTest extends PostgresIntegrationTest {
 					fieldWithPath("data.accessToken").type(JsonFieldType.STRING).description("Manta Access Token"),
 					fieldWithPath("data.tokenType").type(JsonFieldType.STRING).description("토큰 타입"),
 					fieldWithPath("data.expiresAt").type(JsonFieldType.STRING).description("Access Token 만료 시각"),
-					fieldWithPath("data.memberStatus").type(JsonFieldType.STRING).description("회원 상태")
+					new EnumFields(MemberStatus.class).withPath("data.memberStatus").description("회원 상태")
 				)
 			))
 			.andReturn();
@@ -229,7 +233,9 @@ class SignupIntegrationTest extends PostgresIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"legalDocumentIds\":" + currentDocumentIds() + ",\"gender\":\"OTHER\",\"ageGroup\":null}"))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("M117"))
+			.andExpect(jsonPath("$.code").value("M001"))
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("gender"))
+			.andExpect(jsonPath("$.fieldErrors[0].message").value("허용되지 않는 값입니다."))
 			.andReturn();
 		assertThat(failure.getResponse().getHeaders("Set-Cookie"))
 			.noneMatch(cookie -> cookie.startsWith("manta_signup_context=") && cookie.contains("Max-Age=0"));

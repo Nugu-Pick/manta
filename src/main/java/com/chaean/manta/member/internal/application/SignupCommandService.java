@@ -9,8 +9,6 @@ import java.util.stream.Collectors;
 
 import com.chaean.manta.common.web.error.BusinessException;
 import com.chaean.manta.common.web.error.ErrorCode;
-import com.chaean.manta.member.entity.AgeGroup;
-import com.chaean.manta.member.entity.Gender;
 import com.chaean.manta.member.entity.LegalDocument;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberIdentity;
@@ -42,7 +40,6 @@ public class SignupCommandService {
 	@Transactional
 	public AuthTokenPair complete(String encodedContext, SignupCommand command, Instant now) {
 		SignupContext context = contextCodec.decode(encodedContext, now);
-		validateOptionalProfile(command);
 
 		String provider = context.provider().value();
 		if (memberIdentityRepository.findByProviderAndProviderSubject(provider, context.providerSubject()).isPresent()) {
@@ -70,8 +67,7 @@ public class SignupCommandService {
 			throw BusinessException.of(ErrorCode.LEGAL_DOCUMENT_NOT_AVAILABLE);
 		}
 
-		Member member = memberCommandService.registerSignupMember(context.email(),
-			Gender.fromNullable(command.gender()), AgeGroup.fromNullable(command.ageGroup()));
+		Member member = memberCommandService.registerSignupMember(context.email(), command.gender(), command.ageGroup());
 		member.recordLogin(provider, now);
 		try {
 			memberIdentityRepository.save(MemberIdentity.create(member.getId(), provider,
@@ -87,12 +83,4 @@ public class SignupCommandService {
 		return authTokenCommandService.issueAccessAndRefreshTokenPair(member.getId(), now);
 	}
 
-	private void validateOptionalProfile(SignupCommand command) {
-		if (!Gender.isValidOrNull(command.gender())) {
-			throw BusinessException.of(ErrorCode.SIGNUP_GENDER_INVALID);
-		}
-		if (!AgeGroup.isValidOrNull(command.ageGroup())) {
-			throw BusinessException.of(ErrorCode.SIGNUP_AGE_GROUP_INVALID);
-		}
-	}
 }

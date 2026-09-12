@@ -10,6 +10,8 @@ import java.time.Instant;
 import java.util.List;
 
 import com.chaean.manta.common.web.error.BusinessException;
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
 import com.chaean.manta.member.entity.LegalDocument;
 import com.chaean.manta.member.entity.Member;
 import com.chaean.manta.member.entity.MemberIdentity;
@@ -98,7 +100,7 @@ class SignupCommandServiceTest {
 		SignupCommandService service = service();
 
 		// when & then
-		assertThatThrownBy(() -> service.complete("context", SignupCommand.of(List.of(), "MALE", "TEENS"), now))
+		assertThatThrownBy(() -> service.complete("context", SignupCommand.of(List.of(), Gender.MALE, AgeGroup.TEENS), now))
 			.isInstanceOf(BusinessException.class);
 		org.mockito.Mockito.verifyNoInteractions(memberCommandService, memberAgreementRepository, authTokenCommandService);
 	}

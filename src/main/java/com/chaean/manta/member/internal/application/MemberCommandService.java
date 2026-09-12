@@ -58,7 +58,6 @@ public class MemberCommandService {
 	@Transactional
 	public void updateProfile(long memberId, MemberProfileUpdate update) {
 		Member member = findActiveMember(memberId);
-		validateProfileValues(update);
 
 		String nickname = update.nickname() == null
 			? member.getNickname()
@@ -72,17 +71,7 @@ public class MemberCommandService {
 			throw BusinessException.of(ErrorCode.NICKNAME_ALREADY_TAKEN);
 		}
 
-		member.updateProfile(nickname, Gender.fromNullable(update.gender()), AgeGroup.fromNullable(update.ageGroup()),
-			update.description(), update.avatarAssetId());
-	}
-
-	private void validateProfileValues(MemberProfileUpdate update) {
-		if (!Gender.isValidOrNull(update.gender())) {
-			throw BusinessException.of(ErrorCode.SIGNUP_GENDER_INVALID);
-		}
-		if (!AgeGroup.isValidOrNull(update.ageGroup())) {
-			throw BusinessException.of(ErrorCode.SIGNUP_AGE_GROUP_INVALID);
-		}
+		member.updateProfile(nickname, update.gender(), update.ageGroup(), update.description(), update.avatarAssetId());
 	}
 
 	@Transactional

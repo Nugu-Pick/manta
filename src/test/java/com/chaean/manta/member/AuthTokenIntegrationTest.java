@@ -8,6 +8,7 @@ import static org.springframework.restdocs.headers.HeaderDocumentation.responseH
 import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
 import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
+import static org.springframework.restdocs.snippet.Attributes.key;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
@@ -347,7 +348,8 @@ class AuthTokenIntegrationTest extends PostgresIntegrationTest {
 					.summary("OAuth provider 로그인을 시작한다.")
 					.description("OAuth authorization request를 HTTP Session에 저장한 뒤 provider "
 						+ "authorization endpoint로 이동한다."),
-				pathParameters(parameterWithName("provider").description("OAuth provider 이름")),
+				pathParameters(parameterWithName("provider").description("OAuth provider 이름")
+					.attributes(key("enumValues").value(List.of("google", "kakao", "naver")))),
 				responseHeaders(
 					headerWithName("Location").description("OAuth provider authorization endpoint"))
 			))
@@ -440,7 +442,8 @@ class AuthTokenIntegrationTest extends PostgresIntegrationTest {
 					.summary("OAuth callback 결과를 고정 프런트 URI로 전달한다.")
 					.description("신규 identity는 signup context cookie를, 기존 identity는 Refresh Token cookie를 "
 						+ "발급합니다. 실패 시 오류 URI로 이동하며 모든 경우 OAuth HTTP Session을 폐기합니다."),
-				pathParameters(parameterWithName("provider").description("OAuth provider 이름")),
+				pathParameters(parameterWithName("provider").description("OAuth provider 이름")
+					.attributes(key("enumValues").value(List.of("google", "kakao", "naver")))),
 				queryParameters(
 					parameterWithName("code").description("provider authorization code"),
 					parameterWithName("state").description("OAuth state")),

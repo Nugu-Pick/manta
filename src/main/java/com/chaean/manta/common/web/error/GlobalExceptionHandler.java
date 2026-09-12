@@ -21,6 +21,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import tools.jackson.core.JacksonException;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -55,7 +57,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(HttpMessageNotReadableException.class)
 	public ProblemDetail handleMalformedRequest(HttpMessageNotReadableException exception, HttpServletRequest request) {
 		return createProblemDetail(ErrorCode.VALIDATION_FAILED, ErrorCode.VALIDATION_FAILED.defaultDetail(),
-			request, List.of());
+			request, findFieldErrors(exception));
 	}
 
 	@ExceptionHandler(NoResourceFoundException.class)
@@ -104,5 +106,25 @@ public class GlobalExceptionHandler {
 	private String traceId() {
 		String traceId = MDC.get(TraceIdFilter.TRACE_ID_MDC_KEY);
 		return traceId == null ? UUID.randomUUID().toString() : traceId;
+	}
+
+	private List<FieldErrorResponse> findFieldErrors(Throwable exception) {
+		Throwable current = exception;
+		while (current != null) {
+			if (current instanceof JacksonException jacksonException) {
+				String field = jacksonException.getPath().stream()
+					.map(JacksonException.Reference::getPropertyName)
+					.filter(propertyName -> propertyName != null && !propertyName.isBlank())
+					.reduce((first, last) -> last)
+					.orElse(null);
+
+				if (field != null) {
+					return List.of(FieldErrorResponse.of(field, "허용되지 않는 값입니다."));
+				}
+			}
+			current = current.getCause();
+		}
+
+		return List.of();
 	}
 }

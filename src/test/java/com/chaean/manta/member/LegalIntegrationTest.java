@@ -13,8 +13,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.chaean.manta.member.entity.LegalDocumentType;
 import com.chaean.manta.member.fixture.LegalDocumentFixture;
 import com.chaean.manta.support.PostgresIntegrationTest;
 import com.chaean.manta.support.TestJwtDecoderConfiguration;
@@ -67,7 +69,7 @@ class LegalIntegrationTest extends PostgresIntegrationTest {
 					.description("로그인 전에도 동의할 약관의 최신 문서를 조회한다."),
 				responseFields(
 					fieldWithPath("data[].id").type(JsonFieldType.NUMBER).description("약관 문서 ID"),
-					fieldWithPath("data[].documentType").type(JsonFieldType.STRING).description("약관 유형"),
+					new EnumFields(LegalDocumentType.class).withPath("data[].documentType").description("약관 유형"),
 					fieldWithPath("data[].title").type(JsonFieldType.STRING).description("약관 제목"),
 					fieldWithPath("data[].content").type(JsonFieldType.STRING).description("약관 본문"),
 					fieldWithPath("data[].required").type(JsonFieldType.BOOLEAN).description("필수 동의 여부"),

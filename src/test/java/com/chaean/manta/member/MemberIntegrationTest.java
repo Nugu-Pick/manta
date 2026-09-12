@@ -21,8 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.epages.restdocs.apispec.EnumFields;
 import com.epages.restdocs.apispec.MockMvcRestDocumentationWrapper;
 import com.epages.restdocs.apispec.ResourceSnippetParameters;
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
+import com.chaean.manta.member.entity.MemberRole;
 import com.chaean.manta.member.fixture.LegalDocumentFixture;
 import com.chaean.manta.support.PostgresIntegrationTest;
 
@@ -114,16 +118,13 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 						.description("회원 닉네임"),
 					fieldWithPath("data.email").type(JsonFieldType.STRING)
 						.description("OAuth provider가 제공한 이메일"),
-					fieldWithPath("data.gender").type(JsonFieldType.STRING).description("성별")
-						.optional(),
-					fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대")
-						.optional(),
+					new EnumFields(Gender.class).withPath("data.gender").description("성별").optional(),
+					new EnumFields(AgeGroup.class).withPath("data.ageGroup").description("연령대").optional(),
 					fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명")
 						.optional(),
 					fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)
 						.description("프로필 이미지 asset ID").optional(),
-					fieldWithPath("data.role").type(JsonFieldType.STRING)
-						.description("회원 역할")
+					new EnumFields(MemberRole.class).withPath("data.role").description("회원 역할")
 				)
 			))
 			.andReturn();
@@ -172,10 +173,8 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 					.description("Bearer Manta access token")),
 				requestFields(
 					fieldWithPath("nickname").type(JsonFieldType.STRING).description("회원 닉네임"),
-					fieldWithPath("gender").type(JsonFieldType.STRING).description("성별")
-						.optional(),
-					fieldWithPath("ageGroup").type(JsonFieldType.STRING).description("연령대")
-						.optional(),
+					new EnumFields(Gender.class).withPath("gender").description("성별").optional(),
+					new EnumFields(AgeGroup.class).withPath("ageGroup").description("연령대").optional(),
 					fieldWithPath("description").type(JsonFieldType.STRING).description("회원 설명")
 						.optional(),
 					fieldWithPath("avatarAssetId").type(JsonFieldType.NUMBER)
@@ -187,15 +186,13 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 						.description("회원 닉네임"),
 					fieldWithPath("data.email").type(JsonFieldType.STRING)
 						.description("OAuth provider가 제공한 이메일"),
-					fieldWithPath("data.gender").type(JsonFieldType.STRING).description("성별")
-						.optional(),
-					fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대")
-						.optional(),
+					new EnumFields(Gender.class).withPath("data.gender").description("성별").optional(),
+					new EnumFields(AgeGroup.class).withPath("data.ageGroup").description("연령대").optional(),
 					fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명")
 						.optional(),
 					fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)
 						.description("프로필 이미지 asset ID").optional(),
-					fieldWithPath("data.role").type(JsonFieldType.STRING).description("회원 역할")
+					new EnumFields(MemberRole.class).withPath("data.role").description("회원 역할")
 				)
 			));
 	}
@@ -226,12 +223,16 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"gender\":\"OTHER\"}"))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("M117"));
+			.andExpect(jsonPath("$.code").value("M001"))
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("gender"))
+			.andExpect(jsonPath("$.fieldErrors[0].message").value("허용되지 않는 값입니다."));
 		mockMvc.perform(patch("/api/v1/me").header("Authorization", "Bearer " + token)
 				.contentType(MediaType.APPLICATION_JSON)
 				.content("{\"ageGroup\":\"SEVENTIES\"}"))
 			.andExpect(status().isBadRequest())
-			.andExpect(jsonPath("$.code").value("M118"));
+			.andExpect(jsonPath("$.code").value("M001"))
+			.andExpect(jsonPath("$.fieldErrors[0].field").value("ageGroup"))
+			.andExpect(jsonPath("$.fieldErrors[0].message").value("허용되지 않는 값입니다."));
 	}
 
 	@Test
@@ -264,10 +265,8 @@ class MemberIntegrationTest extends PostgresIntegrationTest {
 					fieldWithPath("data.id").type(JsonFieldType.NUMBER).description("회원 ID"),
 					fieldWithPath("data.nickname").type(JsonFieldType.STRING)
 						.description("회원 닉네임"),
-					fieldWithPath("data.gender").type(JsonFieldType.STRING).description("성별")
-						.optional(),
-					fieldWithPath("data.ageGroup").type(JsonFieldType.STRING).description("연령대")
-						.optional(),
+					new EnumFields(Gender.class).withPath("data.gender").description("성별").optional(),
+					new EnumFields(AgeGroup.class).withPath("data.ageGroup").description("연령대").optional(),
 					fieldWithPath("data.description").type(JsonFieldType.STRING).description("회원 설명")
 						.optional(),
 					fieldWithPath("data.avatarAssetId").type(JsonFieldType.NUMBER)

@@ -40,9 +40,7 @@ public enum ErrorCode implements ApiErrorCode {
 	SIGNUP_REQUIRED_AGREEMENT_MISSING("M114", "Signup agreement missing", "가입을 완료하려면 필수 약관에 동의해야 합니다.",
 		HttpStatus.FORBIDDEN),
 	MEMBER_STATUS_NOT_ACTIVE("M116", "Member is not active", "활성화된 회원만 이용할 수 있습니다.",
-		HttpStatus.FORBIDDEN),
-	SIGNUP_GENDER_INVALID("M117", "Invalid signup gender", "성별 값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST),
-	SIGNUP_AGE_GROUP_INVALID("M118", "Invalid signup age group", "연령대 값이 올바르지 않습니다.", HttpStatus.BAD_REQUEST);
+		HttpStatus.FORBIDDEN);
 
 	private final String code;
 	private final String title;

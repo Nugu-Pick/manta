@@ -2,6 +2,9 @@ package com.chaean.manta.member.web.dto.request;
 
 import java.util.List;
 
+import com.chaean.manta.member.entity.AgeGroup;
+import com.chaean.manta.member.entity.Gender;
+
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -11,8 +14,6 @@ public record SignupCompleteRequest(
 	@NotEmpty(message = "동의할 약관 문서 ID를 하나 이상 입력해야 합니다.")
 	@Size(max = 20, message = "한 번에 20개 이하의 약관만 동의할 수 있습니다.")
 	List<@NotNull @Positive Long> legalDocumentIds,
-	@Size(max = 20, message = "성별은 20자 이하여야 합니다.")
-	String gender,
-	@Size(max = 20, message = "연령대는 20자 이하여야 합니다.")
-	String ageGroup) {
+	Gender gender,
+	AgeGroup ageGroup) {
 }
