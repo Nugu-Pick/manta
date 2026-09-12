@@ -45,3 +45,7 @@ jobs:
           tags: |
             ghcr.io/nugu-pick/manta-dev:dev
             ghcr.io/nugu-pick/manta-dev:${{ github.sha }}
+
+      - name: Render 개발 배포 실행
+        if: github.event_name == 'push'
+        run: curl --fail --silent --show-error --request POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
