@@ -56,6 +56,7 @@ manta:
     frontend-login-callback-uri: ${AUTH_FRONTEND_LOGIN_CALLBACK_URI}
     frontend-signup-callback-uri: ${AUTH_FRONTEND_SIGNUP_CALLBACK_URI}
     frontend-error-callback-uri: ${AUTH_FRONTEND_ERROR_CALLBACK_URI}
+    cookie-same-site: ${AUTH_COOKIE_SAME_SITE:Lax}
   oauth:
     google:
       client-id: ${GOOGLE_OAUTH_CLIENT_ID}

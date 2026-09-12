@@ -13,7 +13,8 @@ public record AuthProperties(
 	Duration refreshTokenTtl,
 	String frontendLoginCallbackUri,
 	String frontendSignupCallbackUri,
-	String frontendErrorCallbackUri) {
+	String frontendErrorCallbackUri,
+	String cookieSameSite) {
 
 	public static final String REFRESH_COOKIE_NAME = "manta_refresh_token";
 	public static final String SIGNUP_CONTEXT_COOKIE_NAME = "manta_signup_context";

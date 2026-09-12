@@ -48,11 +48,11 @@ public final class OAuth2SuccessHandler implements AuthenticationSuccessHandler 
 				result = oauthCommandService.completeOAuthLogin(profileUser.profile(), Instant.now());
 				if (result.requiresSignup()) {
 					SignupContext context = result.signupContext();
-					cookie = AuthCookies.create(AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME,
+					cookie = AuthCookies.create(properties, AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME,
 						signupContextCodec.encode(context), context.expiresAt(), Instant.now());
 				} else {
 					AuthTokenPair tokens = result.tokens();
-					cookie = AuthCookies.create(AuthProperties.REFRESH_COOKIE_NAME, tokens.refreshToken(),
+					cookie = AuthCookies.create(properties, AuthProperties.REFRESH_COOKIE_NAME, tokens.refreshToken(),
 						tokens.refreshTokenExpiresAt(), Instant.now());
 				}
 			} catch (RuntimeException exception) {
@@ -62,7 +62,7 @@ public final class OAuth2SuccessHandler implements AuthenticationSuccessHandler 
 
 			// 업무 결과를 준비한 뒤 응답을 기록한다. 응답 전송 오류는 재시도하지 않는다.
 			response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-			response.addHeader(HttpHeaders.SET_COOKIE, AuthCookies.clear(result.requiresSignup()
+			response.addHeader(HttpHeaders.SET_COOKIE, AuthCookies.clear(properties, result.requiresSignup()
 				? AuthProperties.REFRESH_COOKIE_NAME : AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString());
 			redirect(response, result.requiresSignup()
 				? properties.frontendSignupCallbackUri() : properties.frontendLoginCallbackUri());

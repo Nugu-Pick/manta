@@ -10,7 +10,9 @@ import static org.springframework.restdocs.request.RequestDocumentation.pathPara
 import static org.springframework.restdocs.request.RequestDocumentation.queryParameters;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -109,6 +111,18 @@ class AuthTokenIntegrationTest extends PostgresIntegrationTest {
 
 	@Autowired
 	private DataSource dataSource;
+
+	@ParameterizedTest
+	@ValueSource(strings = {"http://localhost:3000", "http://localhost:5173"})
+	@DisplayName("로컬 개발 서버의 CORS preflight를 허용한다")
+	void allowsLocalDevelopmentCorsPreflight(String origin) throws Exception {
+		mockMvc.perform(options("/api/v1/legal-documents/current")
+				.header("Origin", origin)
+				.header("Access-Control-Request-Method", "GET"))
+			.andExpect(status().isOk())
+			.andExpect(header().string("Access-Control-Allow-Origin", origin))
+			.andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+	}
 
 	@ParameterizedTest
 	@ValueSource(strings = {"issuer", "audience", "missing-audience", "expired", "signature", "subject", "zero", "negative"})

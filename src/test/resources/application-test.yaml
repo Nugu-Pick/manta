@@ -25,6 +25,12 @@ manta:
     frontend-login-callback-uri: http://localhost:3000/auth/callback
     frontend-signup-callback-uri: http://localhost:3000/signup/terms
     frontend-error-callback-uri: http://localhost:3000/auth/error
+    cookie-same-site: Lax
+  web:
+    cors:
+      allowed-origins:
+        - http://localhost:3000
+        - http://localhost:5173
   oauth:
     google:
       client-id: test-google-client
