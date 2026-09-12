@@ -66,6 +66,6 @@ class SignupContextCodecTest {
 	private AuthProperties properties() {
 		return new AuthProperties("issuer", "audience", "jwt-secret", Duration.ofMinutes(30), Duration.ofDays(30),
 			"http://localhost:3000/auth/callback", "http://localhost:3000/signup/terms",
-			"http://localhost:3000/auth/error");
+			"http://localhost:3000/auth/error", "Lax");
 	}
 }

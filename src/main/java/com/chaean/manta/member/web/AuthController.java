@@ -33,6 +33,7 @@ public class AuthController {
 
 	private final AuthTokenCommandService authTokenCommandService;
 	private final SignupCommandService signupCommandService;
+	private final AuthProperties properties;
 
 	@PostMapping("/refresh")
 	public ResponseEntity<ApiResponse<AuthTokenResponse>> refresh(
@@ -44,7 +45,7 @@ public class AuthController {
 			.header(HttpHeaders.PRAGMA, "no-cache")
 			.header("Referrer-Policy", "no-referrer")
 			.header(HttpHeaders.SET_COOKIE,
-				AuthCookies.create(AuthProperties.REFRESH_COOKIE_NAME, tokens.refreshToken(),
+				AuthCookies.create(properties, AuthProperties.REFRESH_COOKIE_NAME, tokens.refreshToken(),
 					tokens.refreshTokenExpiresAt(), Instant.now()).toString())
 			.body(ApiResponse.of(AuthTokenResponse.from(tokens)));
 	}
@@ -64,14 +65,14 @@ public class AuthController {
 				.header(HttpHeaders.PRAGMA, "no-cache")
 				.header("Referrer-Policy", "no-referrer")
 				.header(HttpHeaders.SET_COOKIE,
-					AuthCookies.create(AuthProperties.REFRESH_COOKIE_NAME, tokens.refreshToken(),
+					AuthCookies.create(properties, AuthProperties.REFRESH_COOKIE_NAME, tokens.refreshToken(),
 						tokens.refreshTokenExpiresAt(), Instant.now()).toString())
-				.header(HttpHeaders.SET_COOKIE, AuthCookies.clear(AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString())
+				.header(HttpHeaders.SET_COOKIE, AuthCookies.clear(properties, AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString())
 				.body(ApiResponse.of(AuthTokenResponse.from(tokens)));
 		} catch (BusinessException exception) {
 			if (exception.errorCode() == ErrorCode.AUTH_SIGNUP_CONTEXT_INVALID) {
 				response.addHeader(HttpHeaders.SET_COOKIE,
-					AuthCookies.clear(AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString());
+					AuthCookies.clear(properties, AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString());
 			}
 			throw exception;
 		}
@@ -83,7 +84,7 @@ public class AuthController {
 		authTokenCommandService.revokeRefreshToken(refreshToken, Instant.now());
 
 		return ResponseEntity.noContent()
-			.header(HttpHeaders.SET_COOKIE, AuthCookies.clear(AuthProperties.REFRESH_COOKIE_NAME).toString())
+			.header(HttpHeaders.SET_COOKIE, AuthCookies.clear(properties, AuthProperties.REFRESH_COOKIE_NAME).toString())
 			.build();
 	}
 }

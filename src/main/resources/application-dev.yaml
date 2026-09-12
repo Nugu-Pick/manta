@@ -1,11 +1,10 @@
 spring:
   config:
     activate:
-      on-profile: local
+      on-profile: dev
   output:
     ansi:
-      enabled: always
-
+      enabled: never
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -27,11 +26,9 @@ spring:
       hibernate:
         default_schema: orca
 
-logging:
-  pattern:
-    level: '%clr(traceId=%X{traceId:-}){yellow} %clr(%5p){cyan}'
-
 manta:
+  auth:
+    cookie-same-site: ${AUTH_COOKIE_SAME_SITE:None}
   web:
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}

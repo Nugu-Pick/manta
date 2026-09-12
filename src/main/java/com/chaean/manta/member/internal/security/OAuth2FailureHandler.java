@@ -58,7 +58,7 @@ public final class OAuth2FailureHandler implements AuthenticationFailureHandler 
 		}
 		response.setHeader(TraceIdFilter.TRACE_ID_HEADER, traceId);
 		response.addHeader(HttpHeaders.SET_COOKIE,
-			AuthCookies.clear(AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString());
+			AuthCookies.clear(properties, AuthProperties.SIGNUP_CONTEXT_COOKIE_NAME).toString());
 		response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
 		response.setHeader(HttpHeaders.PRAGMA, "no-cache");
 		response.setHeader("Referrer-Policy", "no-referrer");

@@ -8,6 +8,7 @@ import com.chaean.manta.member.internal.application.SignupContextCodec;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -56,6 +57,7 @@ public class OAuth2SecurityConfig {
 		OAuth2FailureHandler failureHandler) throws Exception {
 		http.securityMatcher("/api/v1/auth/oauth/**")
 			.csrf(AbstractHttpConfigurer::disable)
+			.cors(Customizer.withDefaults())
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
 			.authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
 			.oauth2Login(oauth2 -> oauth2
