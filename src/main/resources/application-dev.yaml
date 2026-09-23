@@ -26,6 +26,10 @@ spring:
       hibernate:
         default_schema: orca
 
+logging:
+  level:
+    root: INFO
+
 manta:
   auth:
     cookie-same-site: ${AUTH_COOKIE_SAME_SITE:None}

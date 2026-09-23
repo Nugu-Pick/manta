@@ -26,3 +26,7 @@ spring:
     properties:
       hibernate:
         default_schema: orca
+
+logging:
+  level:
+    root: INFO
